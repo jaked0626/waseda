@@ -1,0 +1,457 @@
+---
+title: 時系列分析 第 10 回
+subtitle: 見せかけの回帰と共和分
+author: Kenichiro Tamaki
+date: 2022 年 6 月 13 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+<p><br></p>
+
+# 6 見せかけの回帰と共和分 {-}
+
+## 6.1 見せかけの回帰 {-}
+
+> **定義6.1 (見せかけの回帰, p.127)**   
+時系列回帰分析
+$$
+y_{t} = \alpha + \beta x_{t} + \varepsilon_{t}
+$$
+を考える. $x_{t}$ と $y_{t}$ が単位根過程の場合, 関係がなくても, あたかも関係があるかのような結果が得られる場合があり, この現象を見せかけの回帰 (spurious regression) という. 
+
+傾向として
+
+- 係数が有意になる ($t$ 値が大きくなり, $p$ 値は小さくなる)
+
+- 決定係数が大きい
+
+経済・ファイナンス分野では単位根をもつデータが多いので, 注意しなければならない.
+
+**例**
+
+```{r fig.width = 9}
+T <- 200 # 標本数
+set.seed(9) # 乱数を指定
+x <- cumsum(rnorm(T)) # ランダム・ウォーク
+y <- cumsum(rnorm(T)) # ランダム・ウォーク
+cor(x, y) # 相関係数
+par(mfrow = c(1, 2)) # プロット画面を 1 行 2 列に分割
+ts.plot(x); ts.plot(y) # 時系列プロット
+```
+
+被説明変数を $y$, 説明変数を $x$ として回帰分析を行う.
+
+```{r}
+sr <- lm(y ~ x) # 回帰分析
+summary(sr) # 結果を表示
+plot(x, y) # 散布図
+abline(sr, col = 2) # 回帰直線
+```
+
+定数項, 回帰係数ともに有意水準 $1 \%$ で有意であり, 決定係数も高いので, 関係があるように見える.
+
+差分系列を考える.
+
+```{r}
+x.d <- diff(x) # x の差分系列
+y.d <- diff(y) # y の差分系列
+cor(x.d, y.d) # 相関係数
+summary(lm(y.d ~ x.d)) # 回帰分析
+```
+
+定数項, 回帰係数ともに有意でなく, 決定係数も低いので, 関係はない.
+
+**回避方法*
+
+- 方法1: ラグ変数を説明変数に含める
+
+$$
+y_{t} = \alpha + \beta_{1} x_{t} + \beta_{2} x_{t - 1} + \beta_{3} y_{t - 1} + \varepsilon_{t}
+$$
+
+- 方法2: 差分をとり, 定常過程に変換してから用いる
+
+$$
+\Delta y_{t} = \alpha + \beta_{1} \Delta x_{t} + \varepsilon_{t}
+$$
+
+  - 差分をとる場合の注意
+
+    - 過剰差分
+
+    - 共和分関係
+
+## 6.2 共和分 {-}
+
+> **定義6.2共和分 (, p.129)**    
+$x_{t}$ と $y_{t}$ を $I(1)$ 過程とする. $a x_{t} + b y_{t}$ が $I(0)$ 過程となる $a$, $b$ が存在するとき, $x_{t}$ と $y_{t}$ の間に共和分関係 (cointegration) があるといい, $(a,b)^{\prime}$ を共和分ベクトルという.   
+一般的には, $\boldsymbol{y}_{t}$ を $I(1)$ 過程とする.
+$\boldsymbol{a}^{\prime} \boldsymbol{y}_{t}$ が $I(0)$ 過程となる $\boldsymbol{a}$ が存在するとき, $\boldsymbol{y}_{t}$ に共和分関係があるといい, $\boldsymbol{a}$ を共和分ベクトル (cointegrating vector) という.
+
+一般的に単位根過程の線形和は単位根過程であるが, 共和分関係がある場合は定常過程になる.
+
+**共和分ベクトル**
+
+共和分ベクトルは一意には定まらない.
+
+- $(a,b)^{\prime}$ を共和分ベクトルとすると, $(2a, 2b)^{\prime}$ も共和分ベクトルである
+
+- 基準化: 最初の成分を $1$ にする $(1, b / a)^{\prime}$
+
+**共和分ランク**
+
+$w_{1, t}$, $w_{2, t}$ を互いに独立な単位根過程, $u_{1, t}$, $u_{2, t}$ を互いに独立な定常過程とする.
+
+**例6.1 (p.130)**
+
+$$
+\begin{cases}
+x_{t} = \alpha w_{1, t} + u_{1, t} \\
+y_{t} = \beta w_{1, t} + u_{2, t} \\
+\end{cases}
+$$
+
+このとき, $x_{t}, y_{t} \sim I(1)$ であるが
+
+$$
+x_{t} - \frac{\alpha}{\beta} y_{t} = u_{1, t} - \frac{\alpha}{\beta} u_{2, t} \sim I(0)
+$$
+
+より, $x_{t}$ と $y_{t}$ の間に共和分関係があり, 共和分ベクトルは $(1, -\alpha / \beta)^{\prime}$ である. 
+<span style="color: red;">
+共和分関係がある変数に対して差分を用いて回帰分析を行うと, 長期的な関係があるにも関わらず, これを考慮しない短期的な関係のみが得られる.
+</span>
+
+**例6.2 (p.130)**
+
+$$
+\begin{cases}
+x_{t} = \alpha w_{1, t} + u_{1, t} \sim I(1) \\
+y_{t} = \beta w_{2, t} + u_{2, t} \sim I(1) \\
+\end{cases}
+$$
+
+このとき, 任意の $a$ に対して $x_{t} - a y_{t} \sim I(1)$ であるから,  共和分関係は存在しない.
+<span style="color: red;">
+回帰分析を行うと見せかけの回帰が生じる可能性がある.
+</span>
+
+**例6 (pp.130--131)**
+
+1. 2変数の間に共和分関係が1個存在する
+1. 2変数の間に共和分関係が存在しない
+1. 3変数の間に共和分関係が1個存在する
+1. 4変数の間に共和分関係が2個存在する
+
+一般的に, $n$ 変数の間に共和分関係が最大で $n - 1$ 個存在する.
+共和分関係の個数を共和分ランクという.
+
+**共和分関係の解釈**
+
+$y_{t}$ と $x_{t}$ の間に共和分関係があるとし, $(1,-a)^{\prime}$ を共和分ベクトルとする.
+
+- $x_{t}$ と $y_{t}$ は $I(1)$ ⇒ 平均回帰的でなく, 予測不可能
+
+- $z_{t} = y_{t} - a x_{t}$ は $I(0)$ ⇒ 平均回帰的であり, 平均で予測可能
+
+$b = E[z_{t}]$ とすると, 長期的には $y_{t} - a x_{t} - b$ が $0$ になる方向に動く傾向がある.
+
+これは, $y_{t}$ と $x_{t}$ の間に均衡関係 $y_{t} = a x_{t} + b$ が成立していると解釈できる.
+
+**例6.5 (ケインズ型の消費関数, p.132)**
+
+$$
+c_{t} = \alpha + \beta y_{t}
+$$
+
+- $y_{t}$: $t$ 期の所得 (GDP)
+- $c_{t}$: $t$ 期の消費
+- $\alpha$: 基礎消費
+- $\beta$: 限界消費性向
+
+一般的に, GDP と消費は単位根過程に従うことが多く, これは見せかけの回帰となる可能性が高い. ケインズ型の消費関数を検証するには, 回帰分析ではなく, 共和分関係の存在について検定しなければならない.
+
+**例6.6 (購買力平価仮説, purchasing power parity, PPP, p.133)**
+
+$$
+\text{PJP}_{t} = \text{E}_{t} \times \text{PUS}_{t}
+$$
+
+- $\text{PJP}_{t}$: $t$ 期の日本の物価
+- $\text{PUS}_{t}$: $t$ 期のアメリカの物価
+- $\text{E}_{t}$: $t$ 期の円ドル為替レート (円/ドル)
+
+対数変換を行うと
+
+$$
+\ln \text{PJP}_{t} = \ln \text{E}_{t} + \ln \text{PUS}_{t}.
+$$
+
+一般的に, 物価や為替レートは単位根過程に従うことが多い.
+PPP仮説を検証するには, $\ln \text{PJP}_{t}$, $\ln \text{E}_{t}$, $\ln \text{PUS}_{t}$ の3変数の間に共和分ベクトル $(1, -1, -1)^{\prime}$ の共和分関係が存在するかについて検定しなければならない.
+
+## 6.3 Granger 表現定理 {-}
+
+- AR の場合
+
+  - $y_{t}$ は AR$(p)$ かつ $I(1)$ (非定常) ⇒ $\Delta y_{t}$ は定常 AR$(p - 1)$
+
+  - $y_{t}$ は AR$(p)$ かつ $I(d)$ (非定常) ⇒ $\Delta^{d} y_{t}$ は定常 AR$(p - d)$
+
+- VAR の場合
+
+  - $\boldsymbol{y}_{t}$ は VAR$(p)$ かつ $I(1)$ (非定常) 
+⇒ $\Delta \boldsymbol{y}_{t}$ は定常であるが VAR$(p - 1)$ とは限らない
+
+    - 共和分関係がない ⇒ $\Delta \boldsymbol{y}_{t} \sim \text{VAR}(p - 1)$
+
+    -
+    <span style="color: red;">
+    共和分関係がある ⇒ $\Delta \boldsymbol{y}_{t} \nsim \text{VAR}(p - 1)$
+    </span>
+
+**例 (pp.134--136)**
+
+$$
+\begin{cases}
+y_{1, t} = \gamma y_{2, t} + u_{1, t} \sim I(1) \\
+y_{2, t} = y_{2, t - 1} + u_{2, t} \sim I(1) \\
+\end{cases}
+$$
+を考える.
+
+$$
+y_{1, t} - \gamma y_{2, t} = u_{1, t} \sim I(0)
+$$
+であるから, $y_{1, t}$ と $y_{2, t}$ の間に共和分関係があり, 共和分ベクトルは $(1, -\gamma)^{\prime}$ である. 
+
+$$
+\begin{pmatrix}
+1 & -\gamma \\
+0 & 1
+\end{pmatrix}
+\begin{pmatrix}
+y_{1t} \\
+y_{2t}
+\end{pmatrix}
+=
+\begin{pmatrix}
+0 & 0 \\
+0 & 1
+\end{pmatrix}
+\begin{pmatrix}
+y_{1,t-1} \\
+y_{2,t-1}
+\end{pmatrix}
++
+\begin{pmatrix}
+u_{1t} \\
+u_{2t}
+\end{pmatrix}
+$$
+より
+
+$$
+\begin{align}
+\begin{pmatrix}
+y_{1t} \\
+y_{2t}
+\end{pmatrix}
+&=
+\begin{pmatrix}
+1 & -\gamma \\
+0 & 1
+\end{pmatrix}^{-1}
+\begin{pmatrix}
+0 & 0 \\
+0 & 1
+\end{pmatrix}
+\begin{pmatrix}
+y_{1,t-1} \\
+y_{2,t-1}
+\end{pmatrix}
++
+\begin{pmatrix}
+1 & -\gamma \\
+0 & 1
+\end{pmatrix}^{-1}
+\begin{pmatrix}
+u_{1t} \\
+u_{2t}
+\end{pmatrix} \\
+&=
+\begin{pmatrix}
+0 & \gamma \\
+0 & 1
+\end{pmatrix}
+\begin{pmatrix}
+y_{1,t-1} \\
+y_{2,t-1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1t} \\
+\varepsilon_{2t}
+\end{pmatrix}.
+\end{align}
+$$
+
+よって
+$$
+\begin{align}
+\begin{pmatrix}
+\Delta y_{1t} \\
+\Delta y_{2t}
+\end{pmatrix}
+&= \left[
+\begin{pmatrix}
+0 & \gamma \\
+0 & 1
+\end{pmatrix}
+-
+\begin{pmatrix}
+1 & 0 \\
+0 & 1
+\end{pmatrix}
+\right]
+\begin{pmatrix}
+y_{1,t-1} \\
+y_{2,t-1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1t} \\
+\varepsilon_{2t}
+\end{pmatrix} \\
+&=
+\begin{pmatrix}
+-1 & \gamma \\
+0 & 0
+\end{pmatrix}
+\begin{pmatrix}
+y_{1,t-1} \\
+y_{2,t-1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1t} \\
+\varepsilon_{2t}
+\end{pmatrix}.
+\end{align}
+$$
+
+ここで, 共和分ベクトル $\boldsymbol{a} = (1, -\gamma)^{\prime}$, $\boldsymbol{b} = (1, 0)^{\prime}$ とおくと
+$$
+\Delta \boldsymbol{y}_{t} = - \boldsymbol{b} \boldsymbol{a}^{\prime} \boldsymbol{y}_{t - 1} + \boldsymbol{\varepsilon}_{t}
+$$
+
+と表現できる.
+
+- $\boldsymbol{a}^{\prime} \boldsymbol{y}_{t-1}$ は共和分関係を表す
+
+- $-\boldsymbol{b} \boldsymbol{a}^{\prime} \boldsymbol{y}_{t - 1}$ は均衡から乖離したときに, 均衡に戻す役割を果たす
+
+- $\boldsymbol{b}$ は均衡からの乖離に対する調整速度と方向を表す
+
+- $- \boldsymbol{b} \boldsymbol{a}^{\prime} \boldsymbol{y}_{t-1}$ を誤差修正項 (error correction term) という
+
+- この表現をベクトル誤差修正モデル (vector error correction model, VECM) という
+
+一般的に，次の $n$ 変量 VAR$(p)$ かつ $I(1)$
+$$
+\boldsymbol{y}_{t} = \boldsymbol{\alpha} + \Phi_{1} \boldsymbol{y}_{t - 1} + \dots + \Phi_{p} \boldsymbol{y}_{t - p} + \boldsymbol{\varepsilon}_{t}
+$$
+を考える.
+
+$$
+\zeta_{i} = \Phi_{i + 1} + \dots + \Phi_{p} \quad (i = 1, \dots, p - 1)
+$$
+とおくと
+$$
+\boldsymbol{y}_{t} = \boldsymbol{\alpha} + \zeta_{0} \boldsymbol{y}_{t - 1} - \zeta_{1} \Delta \boldsymbol{y}_{t - 1} - \dots - \zeta_{p - 1} \Delta \boldsymbol{y}_{t - p + 1} + \boldsymbol{\varepsilon}_{t}
+$$
+より
+$$
+\begin{align}
+\Delta \boldsymbol{y}_{t} &= \boldsymbol{\alpha} - \zeta_{1} \Delta \boldsymbol{y}_{t - 1} - \dots - \zeta_{p - 1} \Delta \boldsymbol{y}_{t - p + 1} - (I - \zeta_{0}) \boldsymbol{y}_{t - 1} + \boldsymbol{\varepsilon}_{t} \\
+&= \boldsymbol{\alpha} - \zeta_{1} \Delta \boldsymbol{y}_{t - 1} - \dots - \zeta_{p - 1} \Delta \boldsymbol{y}_{t - p + 1} - \boldsymbol{B} \boldsymbol{A}^{\prime} \boldsymbol{y}_{t - 1} + \boldsymbol{\varepsilon}_{t}.
+\end{align}
+$$
+
+- 共和分関係がない $(\zeta_{0} = I)$ とき, $\Delta \boldsymbol{y}_{t} \sim \text{VAR}(p-1)$
+
+- 共和分関係がある $(\zeta_{0} \neq I)$ とき, $\Delta \boldsymbol{y}_{t} \nsim \text{VAR}(p - 1)$
+
+- $\boldsymbol{A}$, $\boldsymbol{B}$ は $n \times h$ 行列であり, $h$ は共和分ランクである
+
+- $\boldsymbol{A}^{\prime} \boldsymbol{y}_{t - 1}$ は $h$ 個の共和分関係を表す
+
+- これを VECM$(p - 1)$ または VEC$(p - 1)$ と表す
+
+> **定理 6.1 (p.137)**    
+$\boldsymbol{y}_{t} \sim \text{VAR}(p)$ かつ 共和分関係が存在するとする  
+(1) $\Delta \boldsymbol{y}_{t} \nsim \text{VAR}(p-1)$  
+(2) $\Delta \boldsymbol{y}_{t} \sim \text{VEC}(p-1)$  
+
+## 6.4 共和分関係の推定 {-}
+
+## 6.5 共和分の検定 {-}
+
+- 共和分関係が既知の場合 (仮説の検証)
+
+  - 誤差項に単位根検定を行えばよい
+
+    - 共和分ベクトルが既知の場合 ⇒ 誤差に単位根検定 (ADF 検定)
+
+    - 共和分ベクトルが未知の場合 ⇒ 残差に単位根検定 (Engle--Granger 共和分検定)
+  
+  - 残差は推定誤差であるから, 検定 (棄却域) が異なる
+  
+  - 共和分関係は不安定であり, また, Engle--Granger 共和分検定は制約が多いので, 一般的には次の Johansen の共和分検定を用いる
+
+- 共和分関係が未知の場合
+
+  - 共和分ランクを推定 (Johansen の共和分検定)
+
+    - トレース検定
+
+    - 最大固有値検定
+
+  - 共和分ベクトルを推定
+
+**Johansenの共和分検定の手順**
+
+- まず, 情報量基準を用いて, 原系列に対する VAR の次数を決定する
+
+- 次に, Johansen の共和分検定を用いて, 共和分ランクを推定する
+
+  - トレース検定
+$$
+H_{0}: \text{Rank} = r \quad \text{v.s.} \quad H_{1}: \text{Rank} = n - 1 \quad (r = 0, 1, \dots, n - 2)
+$$
+
+  - 最大固有値検定
+$$
+H_{0}: \text{Rank} = r \quad \text{v.s.} \quad H_{1}: \text{Rank} = r + 1 \quad (r = 0, 1, \dots, n - 2)
+$$
+$r = 0$ から始めて, 帰無仮説が受容されるまで $r$ を増やし, 最初に棄却されない $r$ を共和分関係の個数とする
+
+  - 2つの検定を行い, 総合的に共和分ランクを決定する
+
+- 厳密には, 検定を多用すると有意水準が担保されないので注意すべきである
+
+  - 有意水準 $5 \%$ の検定を $3$ 回行うと, 全体の有意水準は `r round((1 - 0.95^{3})*100, 1)`% となる $(1 - 0.95^{3} = `r 1 - 0.95^{3}`)$

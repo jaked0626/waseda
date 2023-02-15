@@ -1,0 +1,542 @@
+---
+title: 時系列分析 第 9 回
+subtitle: 単位根過程
+author: Kenichiro Tamaki
+date: 2022 年 6 月 6 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+<p><br></p>
+
+# 5 単位根過程 {-}
+
+## 5.1 単位根過程の性質 {-}
+
+### 5.1.1 単位根過程 {-}
+
+定常過程では, 平均と自己共分散が一定である.
+
+- トレンドをもたない
+  
+- 平均回帰的
+
+経済・ファイナンス分野では定常性を満たさないデータが多い.
+
+- GDP, 物価 (トレンドがある)
+
+- 株価, 為替レート (平均回帰的でない)
+
+**非定常過程の例**
+
+> **定義5.1 (単位根過程, p.105)**    
+原系列 $y_{t}$ は非定常過程であり, 差分系列 $\Delta y_{y} = y_{t} - y_{t - 1}$ は定常過程であるとき, 過程は単位根過程 (unit root process) という.
+
+AR 特性方程式が $z = 1$ を解にもつので, 単位根過程という.
+
+> **定義5.2 (和分過程, p.106)**   
+$d - 1$ 階差分系列は非定常過程であり, $d$ 階差分系列は定常過程であるとき,  $d$ 次和分過程 (integrated process), または $I(d)$ 過程という.
+
+単位根過程 $y_{t} \sim I(1)$, 定常過程 $y_{t} \sim I(0)$ と表す.
+
+> **定義5.3 (ARIMA 過程, p.106)**    
+$d$ 階差分系列は定常かつ反転可能な ARMA$(p, q)$ 過程であるとき,  ARIMA$(p, d, q)$ 過程という
+
+$d - 1$ 階差分系列は非定常過程である.
+
+**代表的な単位根過程**
+
+> **定義5.4 (ランダム・ウォーク, p.106)**
+$$
+\begin{align*}
+& y_{t} = \delta + y_{t - 1} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2}) \\
+& y_{0} = 0
+\end{align*}
+$$
+のとき, $y_{t}$ をドリフト率 $\delta$ のランダム・ウォーク (random walk) という.
+
+AR 係数が $1$ の非定常な AR(1) 過程である. $\Delta y_{t} = \delta + \varepsilon_{t}$ は定常過程であり, 特性方程式は $\Phi(z) = 1 - z = 0$ であるから, $z = 1$ を解にもつ.
+
+### 5.1.2 単位根過程のトレンド {-}
+
+ランダム・ウォークを考える.
+$$
+\begin{align*}
+y_{t} &= \delta + y_{t - 1} + \varepsilon_{t} \\
+&= 2 \delta + y_{t - 2} + \varepsilon_{t - 1} + \varepsilon_{t} \\
+& \quad \vdots \\
+&= \delta t + y_{0} + \varepsilon_{1} + \dots + \varepsilon_{t} \\
+&= \delta t + \nu_{t} \quad (\nu_{t} = \varepsilon_{1} + \dots + \varepsilon_{t})
+\end{align*}
+$$
+
+- 線形トレンド $\delta t$ 
+
+  - ドリフト率 $\delta$ は線形トレンドの傾き
+  
+  - 時間の関数で確定的トレンド
+
+- 確定的トレンドを除去した系列 $y_{t} - \delta t = \nu_{t}$
+
+  - $V(\nu_{t}) = \sigma^{2} t$ であるから, 分散が増大する
+  
+  - $\nu_{t}$ を確率的トレンドという
+
+> **定義5.5 (トレンド定常過程, p.107)**    
+$x_{t}$ が定常過程のとき
+$$
+y_{t} = c + \delta t + x_{t}
+$$
+をトレンド定常過程 (trend stationary process) という.
+
+- トレンド定常過程は非定常であるが, (確定的) トレンドを取り除けば定常
+
+- 単位根過程は非定常であり, (確定的) トレンドの取り除いても非定常
+
+**模擬データ**
+
+**単位根過程の生成**
+
+```{r}
+set.seed(10) # 乱数を指定
+T <- 200 # 標本数
+# ドリフト率 0 のランダム・ウォーク
+x1 <- arima.sim(list(order = c(0, 1, 0)), n = T)
+# 累積和, ドリフト率0.1のランダム・ウォーク
+x2 <- cumsum(rnorm(T) + 0.1)
+```
+
+**トレンド定常過程の生成**
+
+```{r}
+set.seed(11) # 乱数を指定
+# 正規分布
+y1 <- 0.1 * (1:T) + rnorm(T, sd = 4)
+# AR(1)
+y2 <- 0.1 * (1:T) + arima.sim(list(order = c(1, 0, 0), ar = 0.8), n = T) 
+```
+
+**時系列とコレログラムのプロット**
+
+```{r fig.height = 6, fig.width = 9}
+par(mfrow = c(2, 2)) # プロット画面を 2 行 2 列に分割
+plot(x1); ts.plot(x2) # 単位根過程の時系列プロット
+ts.plot(y1); plot(y2) # トレンド定常過程の時系列プロット
+acf(x1); acf(x2) # 単位根過程のコレログラム
+acf(y1); acf(y2) # トレンド定常過程のコレログラム
+```
+
+$x$ は単位根過程, $y$ はトレンド定常過程である. 時系列プロットやコレログラムからは違いが分からないが, 性質の異なるデータである.
+
+### 5.1.3 単位根過程の予測 {-}
+
+ドリフト率 $\delta = 0$ とすると
+$$
+y_{t + h} = y_{t} + \varepsilon_{t + h} + \dots + \varepsilon_{t + 1}.
+$$
+
+これより, $h$ 期先最適予測は $\hat{y}_{t + h \vert t} = y_{t}$ であるから
+$$
+\text{MSE} \left( \hat{y}_{t + h \vert t} \right) = E[ (\varepsilon_{t + h} + \dots + \varepsilon_{t + 1})^{2} ] = \sigma^{2} h.
+$$
+
+よって, $h \to \infty$ のとき MSE は発散するので, 単位根過程の長期的な予測は困難である.
+
+### 5.1.4 単位根過程のインパルス応答関数 {-}
+
+$y_{t + h} = y_{t} + \varepsilon_{t + h} + \dots + \varepsilon_{t + 1}$ であるから
+$$
+\text{IRF} (k) = \frac{\partial y_{t + h}}{\partial \varepsilon_{t}} = 1.
+$$
+
+これより, ショックは恒久的な影響をもつ. 定常過程に対しては, ショックは一時的な影響しかもたない.
+
+-
+<span style="color: red;">
+単位根過程とトレンド定常過程では, 導かれる結論が大きく異なる
+</span>
+
+-
+<span style="color: red;">
+単位根過程かどうかを判断する (検定する) ことが重要となる
+</span>
+
+## 5.2 単位根検定 {-}
+
+### 5.2.1 DF (Dickey-Fuller) 検定 {-}
+
+真の過程を AR$(1)$ とし, AR 係数が $1$ かどうかを検定する.
+$$
+H_{0}: \rho = 1, \quad H_{1}: \lvert \rho \rvert < 1
+$$
+
+次の3つの場合を考える必要がある.
+$$
+\begin{align*}
+& 1. \quad H_{0}: y_{t} = y_{t - 1} + u_{t}, & & H_{1}: y_{t} = \rho y_{t - 1} + u_{t}, \quad  \rho < 1 \\
+& 2. \quad H_{0}: y_{t} = y_{t - 1} + u_{t}, & & H_{1}: y_{t} = c + \rho y_{t - 1} + u_{t}, \quad  \rho < 1 \\
+& 3. \quad H_{0}: y_{t} = c + y_{t - 1} + u_{t}, & & H_{1}: y_{t} = c + \delta t + \rho y_{t - 1} + u_{t}, \quad \rho < 1
+\end{align*}
+$$
+
+1. データがトレンドをもたず, 期待値が $0$ である場合
+
+1. データがトレンドをもたず, 期待値が $0$ でない場合
+
+1. データがトレンドをもつ場合
+
+### 5.2.2 ADF (augmented DF, 拡張 DF) 検定 {-}
+
+DF 検定では, 真のモデルを AR(1) であるが, 真のモデルを AR$(p)$ に拡張した DF 検定が ADF 検定である.
+
+- 次数 $p$ は情報量基準 (AIC, BIC など) を用いて決定する 
+
+次の AR$(p)$ を考える.
+$$
+y_{t} = c + \phi_{1} y_{t - 1} + \dots + \phi_{p} y_{t - p} + \varepsilon_{t}
+$$
+
+$y_{t}$ が単位根過程であるとき, AR 特性方程式は $z = 1$ を解にもつので $\phi_{1} + \dots + \phi_{p} = 1$ を検定する.
+
+$$
+\begin{cases}
+\rho = \phi_{1} + \dots + \phi_{p} \\
+\zeta_{k} = -(\phi_{k + 1} + \dots + \phi_{p}), \quad k = 1, \dots, p - 1
+\end{cases}
+$$
+とおくと
+$$
+\Delta y_{t} = c + (\rho - 1) y_{t - 1} + \zeta_{1} \Delta y_{t - 1} \dots + \zeta_{p - 1} \Delta y_{t - p + 1} + \varepsilon_{t}.
+$$
+
+上記を用いて $\rho = 1$ の検定を行えば良いが, DF 検定と同様に3つの場合を考える必要がある.
+
+**データがトレンドをもつ場合 (Type 3, trend)**
+
+推定に用いるモデルは次である.
+$$
+\Delta y_{t} = c + \delta t + (\rho - 1) y_{t - 1} + \zeta_{1} \Delta y_{t - 1} \dots + \zeta_{p - 1} \Delta y_{t - p + 1} + \varepsilon_{t}
+$$
+
+次の3つの帰無仮説を考える. 
+$$
+\begin{align}
+& 3.1 \quad H_{0}: \rho = 1 & & \ (\text{tau3}, \ \delta = 0, & &  N(0,1), \ \delta \neq 0) \\
+& 3.2 \quad H_{0}: \rho = 1, \quad c = 0, \quad \delta = 0& & \ (\text{phi2}) \\
+& 3.3 \quad H_{0}: \rho = 1, \quad \delta = 0 & & \ (\text{phi3}) 
+\end{align}
+$$
+
+**データがトレンドをもたず, 期待値が $0$ でない場合 (Type 2, drift)**
+
+推定に用いるモデルは次である.
+$$
+\Delta y_{t} = c + (\rho - 1) y_{t - 1} + \zeta_{1} \Delta y_{t - 1} \dots + \zeta_{p - 1} \Delta y_{t - p + 1} + \varepsilon_{t}
+$$
+
+次の2つの帰無仮説を考える. 
+$$
+\begin{align}
+& 2.1 \quad H_{0}: \rho = 1 & & \ (\text{tau2}, \ c = 0, & &  N(0,1), \ c \neq 0) \\
+& 2.2 \quad H_{0}: \rho = 1, \quad c = 0 & & \ (\text{phi2})
+\end{align}
+$$
+
+**データがトレンドをもたず, 期待値が $0$ である場合 (Type 1, none)**
+
+推定に用いるモデルは次である.
+$$
+\Delta y_{t} = (\rho - 1) y_{t - 1} + \zeta_{1} \Delta y_{t - 1} \dots + \zeta_{p - 1} \Delta y_{t - p + 1} + \varepsilon_{t}
+$$
+
+次の帰無仮説を考える. 
+$$
+\begin{align}
+1.1 \quad H_{0}: \rho = 1 & & \ (\text{tau1})
+\end{align}
+$$
+
+### 5.2.3 PP (Phillips-Perron) 検定 {-}
+
+PP 検定 は, DF 検定の撹乱項を拡張した検定である. 撹乱項に自己相関や分散不均一性 (heteroskedasticity) を仮定する.
+
+## R での単位根検定 {-}
+
+### 手順 {-}
+
+1. プロットや仮説検定を用いて, トレンドの有無, 期待値が $0$ かどうかを調べ, 適切な仮説を設定する        
+判断が困難な場合は, 最も制約が少ない仮説を用いる
+
+1. 適切な仮説の下で, 検定統計量の値を求める
+
+1. 検定統計量の値と棄却域を比較し, 検定を判断する
+
+    - 帰無仮説 (単位根過程である) を棄却できない ⇒ 定常過程であると判断できない   
+    差分系列に単位根検定を行う    
+    定常過程になるまで繰り返す (過剰差分に注意)
+
+    - 帰無仮説 (単位根過程である) を棄却できる ⇒ 定常過程であると判断できる
+
+単位根過程の漸近理論は定常過程の場合と大きく異なるので, $p$ 値を厳密に求めることは困難である.
+
+### ADF検定 {-}
+
+パッケージ urca を用いて ADF 検定を行う.
+
+```{r}
+library(urca) # パッケージの読込
+```
+
+一般的に, トレンドの有無や, 期待値が $0$ かどうかの判断は困難であるから, まずは Type 3 で検定を行い, 帰無仮説を棄却できない場合は, さらに Type 2 → Type 1 の順に検定を行う.
+
+まず, 独立な模擬データに対して単位根検定を行う.
+
+```{r}
+T <- 200 # 標本数
+x <- rnorm(T) # 標準正規分布
+ts.plot(x) # 時系列プロット
+```
+
+Type 3 の検定を行う. 
+
+```{r}
+# ADF検定
+ur.x <- ur.df(x, # 標本
+              type = "trend", # Type 3
+              lags = 10, # AR の最大次数
+              selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x # 検定統計量の値
+```
+
+帰無仮説 3.1, 3.2, 3.3 に対する検定統計量の値が, それぞれ $`r signif(ur.x@teststat, 4)`$ である. 
+
+```{r}
+ur.x@cval # 棄却域
+```
+
+tau3 は, 帰無仮説 3.1 に対する棄却域 (検定統計量の値がこれより小さいと棄却) である. phi2, phi3 は, それぞれ帰無仮説 3.2, 3.3 に対する棄却域 (検定統計量の値がこれより大きいと棄却) である. 
+
+tau3 の値 $`r signif(ur.x@teststat[1], 4)`$ は $`r ur.x@cval[1,1]`$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, x は定常過程であると判断できる.
+
+次に, 5.1.2 で作成した模擬データに対して ADF 検定を行う.
+
+**単位根過程 (ドリフト率 $0$ のランダム・ウォーク)**
+
+```{r}
+# ADF検定
+ur.x1 <- ur.df(x1, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x1 # 検定統計量の値
+ur.x1@cval # 棄却域
+```
+
+tau3 の値 $`r signif(ur.x1@teststat[1], 4)`$ は $`r ur.x1@cval[1,3]`$ より大きいので, 有意水準 $10 \%$ で帰無仮説を棄却できない. 全ての帰無仮説が棄却できない場合は, Type 2 の検定を行う.
+
+```{r}
+# ADF検定
+ur.x1 <- ur.df(x1, # 標本
+               type = "drift", # Type 2
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x1 # 検定統計量の値
+```
+
+帰無仮説 2.1, 2.2 に対する検定統計量の値が, それぞれ $`r signif(ur.x1@teststat, 4)`$ である.
+
+```{r}
+ur.x1@cval # 棄却域
+```
+
+tau2 は, 帰無仮説 2.1 に対する棄却域 (検定統計量の値がこれより小さいと棄却) である. phi1 は, 帰無仮説 2.2 に対する棄却域 (検定統計量の値がこれより大きいと棄却) である.
+
+tau2 の値 $`r signif(ur.x1@teststat[1], 4)`$ は $`r ur.x1@cval[2,3]`$ より大きいので, 有意水準 $10 \%$ で帰無仮説を棄却できない. 
+全ての帰無仮説が棄却できない場合は, Type 1 の検定を行う.
+
+```{r}
+# ADF検定
+ur.x1 <- ur.df(x1, # 標本
+               type = "none", # Type 1
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x1 # 検定統計量の値
+```
+
+帰無仮説 1.1 に対する検定統計量の値が, $`r signif(ur.x1@teststat, 4)`$ である.
+
+```{r}
+ur.x1@cval # 棄却域
+```
+
+tau1 は, 帰無仮説 1.1 に対する棄却域 (検定統計量の値がこれより小さいと棄却) である. 
+
+tau1 の値 $`r signif(ur.x1@teststat, 4)`$ は $`r ur.x1@cval[3]`$ より大きいので, 有意水準 $10 \%$ で帰無仮説を棄却できない. 
+Type 1 ～ 3 における全ての帰無仮説を棄却できないので, 帰無仮説を受容し単位根過程であると判断する.
+
+x1 の差分系列を考える.
+
+```{r}
+x1d <- diff(x1) # 差分系列
+ts.plot(x1d) # 時系列プロット
+# ADF検定
+ur.x1d <- ur.df(x1d, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x1d # 検定統計量の値
+ur.x1d@cval # 棄却域
+```
+
+tau3 の値 $`r signif(ur.x1d@teststat[1], 4)`$ は $`r ur.x1d@cval[1,1]`$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, x1 の差分系列 は定常過程であると判断できる. 
+
+**x2: 単位根過程 (ドリフト率 $0.1$ のランダム・ウォーク)**
+
+```{r}
+# ADF検定
+ur.x2 <- ur.df(x2, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x2 # 検定統計量の値
+ur.x2@cval # 棄却域
+```
+
+有意水準 $5 \%$ で全ての帰無仮説を棄却できないので, Type 2 の検定を行う.
+
+```{r}
+# ADF検定
+ur.x2 <- ur.df(x2, # 標本
+               type = "drift", # Type 2
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x2 # 検定統計量の値
+ur.x2@cval # 棄却域
+```
+
+有意水準 $1 \%$ で全ての帰無仮説を棄却できないので, Type 1 の検定を行う.
+
+```{r}
+# ADF検定
+ur.x2 <- ur.df(x2, # 標本
+               type = "none", # Type 1
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x2 # 検定統計量の値
+ur.x2@cval # 棄却域
+```
+
+有意水準 $1 \%$で帰無仮説を棄却できない. Type 1 ～ 3 における全ての帰無仮説が棄却できないので, 帰無仮説を受容し単位根過程であると判断する.
+
+x2 の差分系列を考える.
+
+```{r}
+x2d <- diff(x2) # 差分系列
+ts.plot(x2d) # 時系列プロット
+# ADF検定
+ur.x2d <- ur.df(x2d, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.x2d # 検定統計量の値
+ur.x2d@cval # 棄却域
+```
+
+検定統計量の値 `r signif(ur.x2d@teststat[1], 4)` は `r ur.x2d@cval[1,1]` より大きいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, x2 の差分系列 は定常過程であると判断できる. 
+
+**y1: トレンド定常過程 (トレンド + 正規分布)**
+
+```{r}
+# ADF検定
+ur.y1 <- ur.df(y1, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y1 # 検定統計量の値
+ur.y1@cval # 棄却域
+```
+
+tau3 の値 $`r signif(ur.y1@teststat[1], 4)`$ は $`r ur.y1@cval[1,1]`$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, y1  はトレンド定常過程であると判断できる.
+
+**y2:トレンド定常過程 (トレンド + AR(1))**
+
+```{r}
+# ADF検定
+ur.y2 <- ur.df(y2, # 標本
+               type = "trend", # Type 3
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y2 # 検定統計量の値
+ur.y2@cval # 棄却域
+```
+
+tsu3 の値 $`r signif(ur.y2@teststat[1], 4)`$ は $`r ur.y2@cval[1,1]`$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, y2  はトレンド定常過程であると判断できる.
+
+**仮説の設定が適切でない場合**
+
+参考として, トレンド定常過程に対して, Type 3 以外の ADF 検定を行う.
+
+**y1: トレンド定常過程 (トレンド + 正規分布)**
+
+```{r}
+# ADF検定
+ur.y1 <- ur.df(y1, # 標本
+               type = "drift", # Type 2
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y2 # 検定統計量の値
+ur.y2@cval # 棄却域
+```
+
+Type 2 の検定では, 有意水準 $1 \%$ で帰無仮説を棄却できるので, 同じ結論が得られる.
+
+```{r}
+# ADF検定
+ur.y1 <- ur.df(y1, # 標本
+               type = "none", # Type 1
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y1 # 検定統計量の値
+ur.y1@cval # 棄却域
+```
+
+Type 1 の検定では, 有意水準 $10 \%$ で帰無仮説を棄却できないので, 異なる結論が得られる.
+
+**y2:トレンド定常過程 (トレンド + AR(1))**
+
+```{r}
+# ADF検定
+ur.y2 <- ur.df(y2, # 標本
+               type = "drift", # Type 2
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y2 # 検定統計量の値
+ur.y2@cval # 棄却域
+```
+
+Type 2 の検定では, 有意水準 $10 \%$ で帰無仮説を棄却できないので, 異なる結論が得られる.
+
+```{r}
+# ADF検定
+ur.y2 <- ur.df(y2, # 標本
+               type = "none", # Type 1
+               lags = 10, # AR の最大次数
+               selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.y2 # 検定統計量の値
+ur.y2@cval # 棄却域
+```
+
+Type 1 の検定でも, 有意水準 $10 \%$ で帰無仮説を棄却できないので, 異なる結論が得られる.

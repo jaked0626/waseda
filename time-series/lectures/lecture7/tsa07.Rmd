@@ -1,0 +1,672 @@
+---
+title: 時系列分析 第 7 回
+subtitle: VAR 1
+author: Kenichiro Tamaki
+date: 2022 年 5 月 23 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+# はじめに {-}
+
+- 多変量時系列モデルを用いる目的
+
+  - 複数の変数を用いて
+  <span style="color: red;">
+  予測精度の向上
+  </span>
+  を図る
+
+  - 変数間の
+  <span style="color: red;">
+  動学的関係の分析
+  </span>
+  を行う
+
+- VAR (Vector AR) モデル
+
+  - AR モデルの多変量への拡張
+
+  - グレンジャー因果性
+
+  - インパルス応答関数
+
+  - 分散分解
+
+<p><br></p>
+
+# 4 VARモデル {-}
+
+## 4.1 弱定常ベクトル過程 {-}
+
+**多変量モデル**
+
+- 変数が複数あるモデル
+
+  - 国際株式市場の関係について分析: 日本, アメリカ, イギリスの株価指数 (3 変数)
+
+  - 金融政策の効果分析: 鉱工業生産指数, コールレート, マネタリーベース, 物価 (4変数)
+
+- 興味のある変数を全て含めるべきであるが...
+
+  - パラメータ数が多くなる ⇒ 推定精度が落ちる
+
+  - データ数が十分に確保できない ⇒ GDP などのマクロ経済データは四半期
+
+  - 変数の順序が重要となる場合がある ⇒ (直交化) インパルス応答関数は変数の順序によって異なる
+
+**概念と記号**
+
+- 変数の数: $n$ (標本数は $T$)
+
+- 変数ベクトル: $\boldsymbol{y}_{t} = (y_{1, t}, \dots, y_{n, t})^{\prime}$ ($n \times 1$ ベクトル)
+
+- 期待値ベクトル: $\boldsymbol{\mu} = E[\boldsymbol{y}_{t}] = (E[y_{1, t}], \dots, E[y_{n, t}])^{\prime}$ ($n \times 1$ ベクトル)
+
+- $k$ 次自己共分散行列: $\Gamma_{k} = \text{Cov} (\boldsymbol{y}_{t}, \boldsymbol{y}_{t - k}) = \left[] \text{Cov} (y_{i, t}, y_{j, t - k}) \right]_{ij}$ ($n \times n$ 行列)
+
+  - 1 変数の場合: $\gamma_{k} = \gamma_{-k}$
+  
+  - 多変数の場合: $\Gamma_{k} = (\Gamma_{-k})^{\prime}$
+
+- $k$ 次自己相関行列: $\boldsymbol{\rho}_{k} = \text{Cor} [\boldsymbol{y}_{t}, \boldsymbol{y}_{t - k}] = \left[ \text{Cor} (y_{i, t}, y_{j, t - k}) \right]_{ij}$ ($n \times n$ 行列)
+
+  - 1変数の場合：$\rho_{k} = \rho_{-k}$
+  
+  - 多変数の場合：$\boldsymbol{\rho}_{k} = (\boldsymbol{\rho}_{-k})^{\prime}$
+
+- ベクトルホワイトノイズ: $\boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma)$
+
+  - 期待値ベクトル: $E[\boldsymbol{\varepsilon}_{t}] = \boldsymbol{0}$ ($n \times 1$ ベクトル)
+
+  - $k$ 次自己共分散行列: ($n \times n$ 行列)
+  $$
+  \text{Cov} [\boldsymbol{\varepsilon}_{t}, \boldsymbol{\varepsilon}_{t - k}] =
+  \begin{cases}
+  \Sigma, & k = 0 \\
+  \boldsymbol{0}, & k \neq 0
+  \end{cases}
+  $$
+
+## 4.2 VAR モデル {-}
+
+**ベクトル自己回帰 (VAR) モデル**
+
+- AR モデルをベクトルに一般化
+
+- $n$ 変量 VAR$(p)$
+$$
+\boldsymbol{y}_{t} = \boldsymbol{c} + \Phi_{1} \boldsymbol{y}_{t-1} + \dots + \Phi_{p} \boldsymbol{y}_{t-p} + \boldsymbol{\varepsilon}_{t}, \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma)
+$$
+
+  - $\boldsymbol{c}$: $n \times 1$ 定数ベクトル
+  
+  - $\Phi_{i}$: $n \times n$ 係数行列 $(i = 1, \dots, p)$
+  
+**例**
+
+$2$ 変量 VAR$(1)$
+
+$$
+\begin{align}
+&
+\begin{pmatrix}
+y_{1, t} \\
+y_{2, t}
+\end{pmatrix}
+= 
+\begin{pmatrix}
+c_{1} \\
+c_{2}
+\end{pmatrix}
++
+\begin{pmatrix}
+\phi_{11} & \phi_{12} \\
+\phi_{21} & \phi_{22}
+\end{pmatrix}
+\begin{pmatrix}
+y_{1, t - 1} \\
+y_{2, t - 1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\varepsilon_{2, t}
+\end{pmatrix}
+\\
+\\
+& \qquad
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\varepsilon_{2, t}
+\end{pmatrix}
+\sim \text{WN} (\Sigma),
+\quad
+\Sigma =
+\begin{pmatrix}
+\sigma_{1}^{2} & \rho\sigma_{1}\sigma_{2} \\
+\rho\sigma_{2}\sigma_{1} & \sigma_{2}^{2}
+\end{pmatrix}
+\end{align}
+$$
+
+具体的に表現すると
+
+$$
+\begin{cases}
+y_{1, t} = c_{1} + \phi_{11} y_{1, t - 1} + \phi_{12} y_{2, t - 1} + \varepsilon_{1t} \\
+y_{2, t} = c_{2} + \phi_{21} y_{1, t - 1} + \phi_{22} y_{2, t - 1} + \varepsilon_{2t} \\
+\end{cases}
+$$
+
+- $n$ 変量 VAR $(p)$ のパラメータ数 $= n + n^{2} p + \dfrac{1}{2} n(n + 1)$
+
+  - $2$ 変量 VAR$(1)$ のパラメータ数 $= 9$
+  
+  - $4$ 変量 VAR$(2)$ のパラメータ数 $= 46$
+    
+  - $6$ 変量 VAR$(3)$ のパラメータ数 $= 135$
+
+- VAR は同時点の変数を含まないので, 同時方程式モデル (simultaneous equation model) ではない
+
+    - 同時点の変数を含まない VAR を誘導型という
+    
+    - 同時点の変数を含める場合は構造型 VAR (教科書 4.6, pp. 99--101) を用いる
+
+**VARの定常性**
+
+-
+<span style="color: red;">
+特性方程式の全ての解の絶対値が $1$ より大きい ⇒ VAR$(p)$ は定常
+</span>
+
+- VAR$(p)$ の特性方程式
+$$
+\Phi(z) = \lvert I_{n} - \Phi_{1} z- \dots - \Phi_{p} z^{p} \rvert = 0
+$$
+
+  - $I_{n}$: $n \times n$ 単位行列
+  
+  - 行列式で表現される
+
+VAR$(1)$ の特性方程式
+$$
+\Phi(z) = \lvert I - \Phi_{1} z \rvert = z^{n} \lvert z^{-1} I - \Phi_{1} \rvert = 0
+$$
+
+  - 特性方程式の解は $\Phi_{1}$ の固有値の逆数
+
+  - $\Phi_{1}$ の全ての固有値の絶対値が1より小さい ⇒ VAR$(1)$ は定常
+
+VAR モデルの期待値は
+$$
+\boldsymbol{\mu} = E[\boldsymbol{y}_{t}] = (I_{n} - \Phi_{1} - \dots - \Phi_{p})^{-1} \boldsymbol{c}
+$$
+自己相関は
+$$
+\boldsymbol{\rho}_{k} = \Phi_{1} \boldsymbol{\rho}_{k - 1} + \dots + \Phi_{p} \boldsymbol{\rho}_{k - p}
+$$
+であり, ユール・ウォーカー (Yule–Walker) 方程式である.
+
+**VAR分析の手順**
+
+基本的に $1$ 変量の場合と同じ手順でよいが, インパルス応答関数を用いる場合は変数の並び順を考慮しなければならない.
+
+1. 情報量基準 (AIC, BICなど) によりモデルの次数を決定   
+変数間の影響を調べる為にはある程度の次数が必要なので, 情報量基準は参考にとどめる場合もある
+
+1. パラメータを推定 (最小2乗法, 最尤法など)   
+必要があれば有意性の検定
+
+1. モデル診断 (かばん検定, コレログラム)    
+モデルが妥当でない場合は, 1. 戻ってデータの編集 (変換, 追加など) やモデルを変更 
+
+VMA (ベクトル MA) や VARMA (ベクトル ARMA) も同様に定義されるが, 応用上ほとんど利用されない. 
+
+## 4.3 グレンジャー因果性 {-}
+
+**因果関係と相関関係**
+
+因果も相関も, 複数のものの関係を表す.
+
+- 因果関係とは,
+<span style="color: red;">
+「原因と結果の関係」
+</span>
+
+  - 例: Aが変化すると (原因), Bも変化する (結果)
+
+    - 関係の方向が明確 (A ⇒ B)
+
+    - データだけから判断するのは困難
+
+- 相関関係とは, 
+<span style="color: red;">
+「関連性」
+</span>
+
+  - 例: Aが大きいとき, Bも大きい
+
+    - 関係の有無や方向は分からない
+
+    - データだけから判断できる
+
+- 因果関係 ⇒ 相関関係
+
+- 因果関係はないが, 相関関係がある例
+
+  - 偶然の一致
+
+  - 第3の要因 (擬似相関)
+
+一般的に, データのみから因果関係の有無を判断するのは困難であり, 何らかの経済理論に基づく. 
+
+>**定義 4.1 (グレンジャー因果性, p.80)**  
+$y$ から $x$ へグレンジャー因果性 (Granger causality) が存在する   
+    ⇔ $x$ の値だけによる $x$ の予測より, $x$ と $y$ の値による $x$ の予測の方が良い (MSE が小さい)
+
+  - グレンジャー因果性の意味は
+    <span style="color: red;">
+    「予測に有用」
+    </span>
+
+  - 経済理論に基づかない予測を基準とする因果性
+    
+  - データのみから判断できる概念
+
+**VAR とグレンジャー因果性**
+
+VAR ではグレンジャー因果性が明確である.
+
+**例**    
+
+$2$ 変量 VAR$(2)$
+
+$$
+\begin{align}
+&
+\begin{pmatrix}
+y_{1, t} \\
+y_{2, t}
+\end{pmatrix}
+= 
+\begin{pmatrix}
+c_{1} \\
+c_{2}
+\end{pmatrix}
++
+\begin{pmatrix}
+\phi_{11}^{(1)} & \phi_{12}^{(1)} \\
+\phi_{21}^{(1)} & \phi_{22}^{(1)}
+\end{pmatrix}
+\begin{pmatrix}
+y_{1, t - 1} \\
+y_{2, t - 1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\phi_{11}^{(2)} & \phi_{12}^{(2)} \\
+\phi_{21}^{(2)} & \phi_{22}^{(2)}
+\end{pmatrix}
+\begin{pmatrix}
+y_{1, t - 2} \\
+y_{2, t - 2}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\varepsilon_{2, t}
+\end{pmatrix}
+\end{align}
+$$
+
+具体的に表現すると
+
+$$
+\begin{cases}
+y_{1, t} = c_{1} + \phi_{11}^{(1)} y_{1, t - 1} + \phi_{12}^{(1)} y_{2, t - 1} + \phi_{11}^{(2)} y_{1, t - 2} + \phi_{12}^{(2)} y_{2, t - 2} + \varepsilon_{1, t} \\
+y_{2, t} = c_{2} + \phi_{21}^{(1)} y_{1, t - 1} + \phi_{22}^{(1)} y_{2, t - 1} + \phi_{21}^{(2)} y_{1, t - 2} + \phi_{22}^{(2)} y_{2, t - 2} + \varepsilon_{2, t}
+\end{cases}
+$$
+
+- $y_{2, t}$ から $y_{1, t}$ へのグレンジャー因果性が存在しない
+
+  - ⇔ $y_{1t, }$ の式に $y_{2t, }$ が含まれない	
+  
+  - ⇔ $y_{1t, }$ の式において $y_{2, t}$ に関する係数が全て $0$	
+  
+  - ⇔ $\phi_{12}^{(1)} = \phi_{12}^{(2)} = 0$
+
+- $y_{2, t}$ から $y_{1, t}$ へのグレンジャー因果性の検定 $H_{0}: \phi_{12}^{(1)} = \phi_{12}^{(2)} = 0$
+  
+- $y_{1, t}$ から $y_{2, t}$ へのグレンジャー因果性の検定 $H_{0}: \phi_{21}^{(1)} = \phi_{21}^{(2)} = 0$
+
+VAR では, グレンジャーの因果性は $F$ 検定となる.
+
+**グレンジャー因果性の注意点**
+
+- 
+<span style="color: red;">
+「グレンジャー因果性」と「因果性」は異なる概念 ⇒ 正しく使用する
+</span>
+
+- グレンジャー因果性の長所
+
+  - 定義が明確で, 特に VAR の場合は理解も容易
+  
+  - データのみから判断できる
+
+- グレンジャー因果性の短所
+
+  - 因果関係の必要条件であって, 十分条件ではない
+
+  - 因果関係の方向も厳密には分からない
+  
+  - 関係の強さが測れない
+  
+- 「因果性」を考えるには, 経済理論などから, 原因と結果について十分に考察しなければならない
+
+- 「グレンジャー因果性」の解釈は慎重に行うべき
+
+## 4.4 インパルス応答関数 {-}
+
+ある変数に対する
+<span style="color: red;">
+ショック
+</span>
+が, その変数やその他の変数に与える影響を分析することが出来る.
+
+- グレンジャー因果性と異なり, 定量的な分析が出来る
+
+- ショックの識別の仕方により複数の IRF が存在する
+
+  - 非直交化 IRF
+
+  - 直交化 IRF
+
+### 4.4.1 非直交化インパルス応答関数 {-}
+
+- $n$ 変量 VAR$(p)$
+$$
+\boldsymbol{y}_{t} = \boldsymbol{c} + \Phi_{1} \boldsymbol{y}_{t - 1} + \dots + \Phi_{p} \boldsymbol{y}_{t - p} + \boldsymbol{\varepsilon}_{t}, \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma)
+$$
+
+>**定義4.3 (非直交化インパルス応答関数, p.84)**  
+$y_{j, t}$ の撹乱項 $\varepsilon_{j, t}$ に $1$ 単位 (または $1$ 標準偏差) のショックを与えたときの $y_{i, t + k}$ の変化を, $y_{j}$ のショックに対する $y_{i}$ の $k$ 期後の非直交化インパルス応答という.  
+$k$ の関数としてみたものを, 非直交化インパルス応答関数 (impulse response function, IRF) という.
+$$
+\text{IRF}_{ij}(k) = \frac{\partial y_{i, t + k}}{\partial \varepsilon_{j, t}}, \quad k = 0, 1, \dots
+$$
+
+上記は $1$ 単位のショックに対する IRF である. $1$ 標準偏差のショックに対する IRF は, $\varepsilon_{j, t}$ の標準偏差を掛ければ良い.
+
+**例**    
+
+$2$ 変量 VAR$(1)$
+
+$$
+\begin{align}
+&
+\begin{cases}
+y_{1, t} = - 1 + 0.6 y_{1, t - 1} + 0.3 y_{2, t - 1} + \varepsilon_{1, t} \\
+y_{2, t} = 1 + 0.1 y_{1, t - 1} + 0.8 y_{2, t - 1} + \varepsilon_{2, t}
+\end{cases} \\
+& \\
+& \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma), \quad
+\Sigma =
+\begin{pmatrix}
+4 & 1.2 \\
+1.2 & 1
+\end{pmatrix}
+\end{align}
+$$
+
+$y_{1}$ に $1$ 単位のショックを与えた時の非直交化 IRF を考える.
+
+- 同時点における非直交化 IRF
+$$
+\begin{align}
+& \text{IRF}_{11}(0) = \frac{\partial y_{1, t}}{\partial \varepsilon_{1, t}} = 1 \\
+& \text{IRF}_{21}(0) = \frac{\partial y_{2, t}}{\partial \varepsilon_{1, t}} = 0
+\end{align}
+$$
+
+- $1$ 期後の非直交化 IRF
+$$
+\begin{align}
+& \text{IRF}_{11}(1) = \frac{\partial y_{1, t + 1}}{\partial \varepsilon_{1, t}} = 0.6 \frac{\partial y_{1, t}}{\partial \varepsilon_{1, t}} + 0.3 \frac{\partial y_{2, t}}{\partial \varepsilon_{1, t}} = 0.6 \text{IRF}_{11}(0) + 0.3 \text{IRF}_{21}(0) = 0.6 \\
+& \text{IRF}_{21}(1) = \frac{\partial y_{2, t + 1}}{\partial \varepsilon_{1, t}} = 0.1 \frac{\partial y_{1, t}}{\partial \varepsilon_{1, t}} + 0.8 \frac{\partial y_{2, t}}{\partial \varepsilon_{1, t}} = 0.1 \text{IRF}_{11}(0) + 0.8 \text{IRF}_{21}(0) = 0.1
+\end{align}
+$$
+
+- $k$ 期後の非直交化 IRF
+$$
+\begin{align}
+& \text{IRF}_{11}(k) = 0.6 \text{IRF}_{11}(k - 1) + 0.3 \text{IRF}_{21}(k - 1) \\
+& \text{IRF}_{21}(k) = 0.1 \text{IRF}_{11}(k - 1) + 0.8 \text{IRF}_{21}(k - 1)
+\end{align}
+$$
+
+逐次的に非直交化 IRF を計算することが出来る. $y_{2}$ のショックに対する非直交化IRFも同様に計算できる.
+
+**非直交化IRFの問題点**
+
+- $y_{1}$ に $1$ 単位のショックを与える ⇔ $\varepsilon_{1, t}$ のみにショックを与える
+
+- $y_{2}$ に $1$ 単位のショックを与える ⇔ $\varepsilon_{2, t}$ のみにショックを与える
+
+  - $\varepsilon_{1, t}$ と $\varepsilon_{2, t}$ に相関がある場合は, $\varepsilon_{1, t}$ が変化すると $\varepsilon_{2, t}$ も変化する
+  
+  - 相関のある他の撹乱項にもショックを与えていることになるが, この影響が考慮されていない
+
+よって, 撹乱項に相関がある場合は, 非直交化 IRF では純粋なショックが与える影響を分析できない.
+
+### 4.4.2 直交化インパルス応答関数 {-}
+
+撹乱項に相関がある場合, 純粋なショックが与える影響を分析する方法が直交化インパルス応答関数である.
+
+- 撹乱項を相関する部分と無相関な部分に分解し, 無相関な部分にのみショックを与える
+
+- 撹乱項の共分散行列に対して, 三角分解やコレスキー分解 (Cholesky decomposition) を用いる 
+
+>**定義4.4 (直交化インパルス応答関数, p.87)**  
+撹乱項の分散共分散行列の三角分解を用いて分解したとき, 無相関な部分を直交化撹乱項という. $y_{j, t}$ の直交化撹乱項に $1$ 単位 (または $1$ 標準偏差) のショックを与えたときの $y_{i, t + k}$ の変化を, $y_{j}$ のショックに対する $y_{i}$ の $k$ 期後の直交化インパルス応答という.  
+$k$ の関数としてみたものを, 直交化インパルス応答関数という.
+
+**三角分解**
+
+分散共分散行列 $\Sigma$ は正定値 (positive definite) であるから, 次のように三角分解可能である.
+$$
+\Sigma = A D A^{\prime}
+$$
+ここで, $A$ は対角成分が $1$ に等しい下三角行列, $D$ は対角行列である. 
+$$
+\boldsymbol{u}_{t} = A^{-1} \boldsymbol{\varepsilon}_{t}
+$$
+とおくと, $V(\boldsymbol{u}_{t}) = D$ であるから, $\boldsymbol{u}_{t}$ は無相関である (直交化撹乱項).
+
+$y_{j}$ のショックに対する $y_{i}$ の直交化 IRF は次である.
+$$
+\text{IRF}_{ij}(k) = \frac{\partial y_{i, t + k}}{\partial u_{j, t}}, \quad k = 0, 1, \dots
+$$
+
+上記は $1$ 単位のショックに対する IRF である. $1$ 標準偏差のショックに対する IRF は, $u_{j, t}$ の標準偏差を掛ければ良い.
+
+**コレスキー分解**
+
+$P = A D^{1 / 2}$ とおくと
+$$
+\Sigma = A D^{1 / 2} D^{1 / 2} A^{\prime} = P P^{\prime}
+$$
+さらに
+$$
+\boldsymbol{v}_{t} = P^{-1} \boldsymbol{\varepsilon}_{t} = D^{-1 / 2} A^{-1} \boldsymbol{\varepsilon}_{t} = D^{-1 / 2} \boldsymbol{u}_{t}
+$$
+とおくと, $\text{Var} [\boldsymbol{v}_{t}] = I_{n}$ であり
+$$
+\text{IRF}_{ij}(k) = \frac{\partial y_{i,t+k}}{\partial v_{jt}}, \quad k = 0, 1, \dots
+$$
+が $1$ 標準偏差のショックに対する IRF である.
+
+**例**
+
+$2$ 変量 VAR$(1)$
+$$
+\begin{align}
+&
+\begin{cases}
+y_{1, t} = - 1 + 0.6 y_{1, t - 1} + 0.3 y_{1, t - 2} + \varepsilon_{1, t} \\
+y_{2, t} = 1 + 0.1 y_{1, t - 1} + 0.8 y_{2, t - 1} + \varepsilon_{2, t}
+\end{cases} \\
+& \\
+& \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma), \quad
+\Sigma =
+\begin{pmatrix}
+4 & 1.2 \\
+1.2 & 1
+\end{pmatrix}
+\end{align}
+$$
+
+$y_{1}$ に $1$ 単位のショックを与えた時の直交化 IRF を考える
+
+- 三角分解
+$$
+A =
+\begin{pmatrix}
+1 & 0 \\
+a & 1
+\end{pmatrix}, \quad
+D =
+\begin{pmatrix}
+\sigma_{u1}^{2} & 0 \\
+0 & \sigma_{u2}^{2}
+\end{pmatrix}
+$$
+とおくと $A D A^{\prime} = \Sigma$ であるから
+$$
+\begin{pmatrix}
+\sigma_{u1}^{2} & a \sigma_{u1}^{2} \\
+a \sigma_{u1}^{2} & a^{2} \sigma_{u1}^{2} + \sigma_{u2}^{2}
+\end{pmatrix}
+=
+\begin{pmatrix}
+4 & 1.2 \\
+1.2 & 1
+\end{pmatrix}
+$$
+これを解くと, $a = 0.3$, $\sigma_{u1} = 2$, $\sigma_{u2} = 0.8$. $\boldsymbol{\varepsilon}_{t} = A \boldsymbol{u}_{t}$ より
+$$
+\begin{cases}
+\varepsilon_{1t} = u_{1t} \\
+\varepsilon_{2t} = 0.3 u_{1t} + u_{2t}
+\end{cases}
+$$
+
+- 直交化撹乱項を用いた表現
+$$
+\begin{align}
+&
+\begin{cases}
+y_{1, t} = - 1 + 0.6 y_{1, t - 1} + 0.3 y_{1, t - 2} + u_{1, t} \\
+y_{2, t} = 1 + 0.1 y_{1, t - 1} + 0.8 y_{2, t - 1} + 0.3 u_{1, t} + u_{2, t}
+\end{cases} \\
+& \\
+& \quad \boldsymbol{u}_{t} \sim \text{WN} (D), \quad
+D =
+\begin{pmatrix}
+4 & 0 \\
+0 & 0.64
+\end{pmatrix}
+\end{align}
+$$
+
+- 同時点における直交化 IRF
+$$
+\begin{align}
+& \text{IRF}_{11}(0) = \frac{\partial y_{1, t}}{\partial u_{1, t}} = 1 \\
+& \text{IRF}_{21}(0) = \frac{\partial y_{2, t}}{\partial u_{1, t}} = 0.3
+\end{align}
+$$
+
+- $k$ 期後の直交化 IRF
+$$
+\begin{align}
+& \text{IRF}_{11}(k) = 0.6 \text{IRF}_{11}(k - 1) + 0.3 \text{IRF}_{21}(k - 1) \\
+& \text{IRF}_{21}(k) = 0.1 \text{IRF}_{11}(k - 1) + 0.8 \text{IRF}_{21}(k - 1)
+\end{align}
+$$
+
+逐次的に直交化 IRF を計算することが出来る. $y_{2}$ のショックに対する直交化 IRF も同様に計算できる.
+
+**直交化IRFの注意点**
+
+$\boldsymbol{\varepsilon}_{t} = A \boldsymbol{u}_{t}$ より
+$$
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\vdots \\
+\varepsilon_{n, t}
+\end{pmatrix}
+=
+\begin{pmatrix}
+1 & 0 & \cdots & 0 \\
+a_{21} & \ddots & \ddots & \vdots \\
+\vdots & \ddots & \ddots & 0 \\
+a_{n1} & \cdots & a_{n, n - 1} & 1 \\
+\end{pmatrix}
+\begin{pmatrix}
+u_{1, t} \\
+\vdots \\
+u_{n, t}
+\end{pmatrix}
+$$
+
+$$
+\begin{cases}
+\varepsilon_{1, t} = u_{1, t} \\
+\varepsilon_{2, t} = a_{21} u_{1, t} + u_{2, t} \\
+\vdots \\
+\varepsilon_{n, t} = a_{n1} u_{1, t} + \dots + a_{n, n - 1} u_{n - 1, t} + u_{n, t} \\
+\end{cases}
+$$
+
+これより, $u_{i, t}$ は $\varepsilon_{j, t}$ $(j \ge i)$ に影響を与えるが, $\varepsilon_{k, t}$ $(k < i)$ には影響を与えない. つまり, $i < j$ に対して
+
+- $y_{i}$ の直交化撹乱項は $y_{j}$ に影響を与えるが
+
+- $y_{j}$ の直交化撹乱項は $y_{i}$ に影響を与えない
+
+データの並び順によって結果が異なる.
+
+- 
+<span style="color: red;">
+外生性の高い順番に並べる
+</span>
+
+**例4.4 (変数の並べ方, p.90)**  
+
+- アメリカ, イギリス, 日本の株式収益率
+
+  - 月次データ: 株式市場の影響力を考慮する
+  
+    - アメリカ, 日本, イギリス (時価総額)
+    
+    - アメリカ, イギリス, 日本 (金融市場の国際的な影響力)
+    
+  - 日次データ: 株式市場の時差を考慮する
+  
+    - 日本, イギリス, アメリカ
+
+複数の順序が考えられる場合は, 複数の順序で分析し, 主要な結果が変わらないことを確認する.

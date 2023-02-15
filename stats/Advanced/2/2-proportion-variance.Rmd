@@ -1,0 +1,186 @@
+---
+title: "Proportions, Differences of Means, and Sample Variance"
+subtitle: "Numerical Statistics Fall, 2021"
+author: "Jake Underland"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    toc: true
+    extra_dependencies: ["amsmath", "xcolor"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# The Sampling Distribution of Proportions  
+
+## Bernoulli Distribution  
+Let $(X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)$ drawn from an infinite ($\approx$ with replacement) population. 
+$$\begin{cases}
+P(X_i = 1) = p  \\
+P(X_i=0) = 1 - p
+\end{cases}(i = 1, 2, \dots, n)$$
+The probabilities can be combined into one as 
+$$P(X_i = x_i) = p^{x_i} (1-p)^{1 - x_i} \text{ for }(x_i = 0, 1)$$
+So, the joint probability can be expressed as:
+$$\begin{aligned}
+P(X_1 = x_1, X_2 = x_2, \dots, X_n = x_n) &= \prod^{n}_{i=1}P(X_i = x_i) \\
+&= \prod^{n}_{i=1}p^{x_i} (1-p)^{1 - x_i} \\
+&= p^{x_1 + x_2 + \dots + x_n}(1-p)^{n - x_1 - x_2 - \dots - x_n} \\
+&= p^{\sum_{i = 1}^nx_i}(1-p)^{n - \sum_{i = 1}^nx_i}
+\end{aligned}$$
+\textbf{Expectation and Variance:}  
+$$\begin{aligned} 
+E(X) &= \sum^1_{x=0} P(X = x) x  \\
+&= 1 \times p + 0 \times (1-p) \\
+&= p \\
+Var(X) &= \sum^1_{x=0} P(X = x) x^2 - E(X)^2 \\
+&= p - p^2 \\
+&= p(1-p)
+\end{aligned}$$
+
+## Binomial Distribution  
+Let $(X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)$. Then, $Y = X_1 + X_2 + \cdots + X_n \sim Bin(n, p)$. 
+$$P(Y = x) =\binom{n}{x}p^x (1-p)^{n-x} \text{ for } x = 0, 1, \dots, n$$
+\textbf{Binomial Theorem:}
+$$ (a +b)^n = \sum^n_{i=1}\binom{n}{x}a^xb^{n-x}$$ 
+where the right hand side represents the probability of a particular value of $x$, or a particular combination of number of successes and number of failures.  
+  
+
+\textbf{Expectation and Variance:} 
+$$
+\begin{aligned} 
+E(Y) &= E(\sum^n_{i=0} X_i) \text{ where } X_i \stackrel{iid}{\sim} Ber(p) \\
+&=\sum^n_{i=0}  E(X_i)\\
+&= \sum^n_{i=0} p \\
+&= np\\
+Var(Y) &= Var(\sum^n_{i=0} X_i) \text{ where } X_i \stackrel{iid}{\sim} Ber(p) \\
+&=\sum^n_{i=0}  Var(X_i) \dots Independene\\
+&= np(1-p)
+\end{aligned}
+$$
+
+## Proportions  
+
+Suppose $(X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)$. Then, the sample mean 
+$$\bar{X} = \frac{ X_1 + X_2 + \dots + X_n}{n}$$
+is an unbiased estimator of the parameter $p$:
+$$\begin{aligned}
+E(\bar{X}) &= E(\frac{1}{n} \sum^n_{i=1} X_i) \\
+&= \frac{1}{n} \sum^n_{i=1} E(X_i) \\
+&= \frac{1}{n} \sum^n_{i=1} p \\
+&= p \; \Box
+\end{aligned}$$
+The variance of the sample mean $\bar{X}$ is: 
+
+$$\begin{aligned}
+Var(\bar{X}) &= Var(\frac{1}{n} \sum^n_{i=1} X_i) \\
+&= \frac{1}{n^2} \sum^n_{i=1} Var(X_i) \dots Independence \\
+&= \frac{1}{n^2} \sum^n_{i=1} p(1-p) \\
+&= \frac{p(1-p)}{n} \; \Box
+\end{aligned}$$
+
+
+# Sampling Distribution of the Differences of Means  
+
+\[\begin{aligned}
+&\Pi_1: \text{ A population with mean $\mu_1$ and standard deviation $\sigma_1$} \\
+&\Pi_2: \text{ A population with mean $\mu_2$ and standard deviation $\sigma_2$}
+\end{aligned}\]
+
+We examine the following cases where the populations are infinite (sampling is with replacement) or populations are finite (sampling is without replacement).  
+
+## Infinite Population (Sampling With Replacement)  
+
+A sample of size $n_1$ drawn from $\Pi_1$ and $n_2$ drawn from $\Pi_2$. Then, 
+$$\begin{aligned}
+\bar{X_1} &= \frac{1}{n_1}\sum_{i = 1}^{n_1}X_i \\
+\bar{Y_2} &= \frac{1}{n_2}\sum_{i = 1}^{n_2}Y_i
+\end{aligned}$$
+Where 
+$$\begin{aligned}
+E(X_1) &= \mu_1 \\
+E(Y_2) &= \mu_2
+\end{aligned}$$
+and 
+$$\begin{aligned}
+Var(X_1) &= \frac{\sigma_1^2}{n_1} \\
+Var(Y_2) &= \frac{\sigma_2^2}{n_2}
+\end{aligned}$$
+Then, the expectation of $\bar{X_1} - \bar{Y_2}$ is 
+$$\mu_{\bar{X_1} - \bar{Y_2}} = E(\bar{X_1} - \bar{Y_2}) = E(\bar{X_1}) - E(\bar{Y_2}) = \mu_1 - \mu_2$$
+The variance is 
+$$\sigma_{\bar{X_1} - \bar{Y_2}} = Var(\bar{X_1} - \bar{Y_2}) = Var(\bar{X_1}) + Var(\bar{Y_2}) = \frac{\sigma_1^2}{n_1} + \frac{\sigma_2^2}{n_2}$$
+
+## Finite Population (Sampling Without Replacement)  
+
+A sample of size $n_1$ drawn from $\Pi_1$ and $n_2$ drawn from $\Pi_2$. Then, 
+$$\begin{aligned}
+\bar{X_1} &= \frac{1}{n_1}\sum_{i = 1}^{n_1}X_i \\
+\bar{Y_2} &= \frac{1}{n_2}\sum_{i = 1}^{n_2}Y_i
+\end{aligned}$$
+Where 
+$$\begin{aligned}
+E(X_1) &= \mu_1 \\
+E(Y_2) &= \mu_2
+\end{aligned}$$
+and 
+$$\begin{aligned}
+Var(X_1) &= \frac{\sigma_1^2}{n_1}\left(\frac{N_1-n_1}{N_1-1}\right) \\
+Var(Y_2) &= \frac{\sigma_2^2}{n_2}\left(\frac{N_2-n_2}{N_2-1}\right)
+\end{aligned}$$
+Then, the expectation of $\bar{X_1} - \bar{Y_2}$ is 
+$$\mu_{\bar{X_1} - \bar{Y_2}} = E(\bar{X_1} - \bar{Y_2}) = E(\bar{X_1}) - E(\bar{Y_2}) = \mu_1 - \mu_2$$
+The variance is 
+$$\sigma_{\bar{X_1} - \bar{Y_2}} = Var(\bar{X_1} - \bar{Y_2}) = Var(\bar{X_1}) + Var(\bar{Y_2}) = \frac{\sigma_1^2}{n_1}\left(\frac{N_1-n_1}{N_1-1}\right) + \frac{\sigma_2^2}{n_2}\left(\frac{N_2-n_2}{N_2-1}\right)$$
+
+
+# The Sample Variance  
+
+Suppose the following: 
+$$\begin{aligned}
+S^2 &= \frac{1}{n}\sum_{i=1}^n(X_i-\bar{X})^2 \\
+&= \frac{1}{n}\sum_{i=1}^n(X_i^2-2\bar{X}X_i + \bar{X}^2) \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-2\bar{X} \underbrace{\frac{1}{n}\sum_{i=1}^nX_i}_{\bar{X}} +  \frac{1}{n}\sum_{i=1}^n\bar{X}^2 \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-2\bar{X}^2 + \bar{X}^2 \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-\bar{X}^2
+\end{aligned}$$
+Then, we have a biased estimator of variance, as can be seen below:
+$$\begin{aligned}
+E(S^2) &= E(\frac{1}{n}\sum_{i=1}^nX_i^2-\bar{X}^2) \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) - E\left[\frac{1}{n}\sum_{i=1}^nX_i\frac{1}{n}\sum_{j=1}^nX_j\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) - \frac{1}{n^2}E\left[\sum_{i=1}^n\sum_{j=1}^nX_iX_j\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) -\frac{1}{n^2}E\left[\underbrace{\sum_{i=1}^nX_i^2}_{n} + \underbrace{\sum_{i=1}^n\sum_{j\ne i}^nX_iX_j}_{n^2-n}\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) -\frac{1}{n^2}\sum_{i=1}^nE(X_i^2) + \frac{1}{n^2}\sum_{i=1}^n\sum_{j\ne i}^nE(X_i)E(X_j) \dots Independence \\
+&= \frac{n-1}{n}E(X_i^2) - \frac{n-1}{n}E(X_i)^2\dots Identical \\
+&= \frac{n-1}{n}[E(X_i^2) -E(X_i)^2] \\
+&= \frac{n-1}{n}Var(X_i)
+\end{aligned}$$
+In order to obtain an unbiased estimator of variance, 
+$$\begin{aligned}
+E(S^2) &= \frac{n-1}{n}Var(X_i) \\
+\implies E(\frac{n}{n-1}S^2) &= \frac{n}{n-1}E(S^2) = Var(X_i) \\
+\frac{n}{n-1}S^2 &= \frac{n}{n-1}\cdot\frac{1}{n}\sum_{i=1}^n(X_i-\bar{X})^2 = \frac{1}{n-1}\sum_{i=1}^n(X_i-\bar{X})^2 \dots \Box
+\end{aligned}$$
+
+So, the sample variance is
+$$\hat{S}^2 = \frac{1}{n-1}\sum_{i=1}^n(X_i-\bar{X})^2$$
+
+
+
+
+
+

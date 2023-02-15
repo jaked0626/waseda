@@ -1,0 +1,337 @@
+---
+title: 時系列分析 第 11 回
+subtitle: VECM
+author: Kenichiro Tamaki
+date: 2022 年 6 月 20 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+<p><br></p>
+
+# パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(readr) # ファイルの読込
+library(quantmod) # 時系列データに変換
+library(vars) # VAR
+library(urca) # 単位根検定, 共和分検定
+```
+
+# 関数の作成
+
+自作関数は次である.
+
+**VAR の残差に対するかばん検定**
+
+```{r}
+port.v <- function(x, lag) { # x = 推定結果, lag = ラグ
+  res <- serial.test(x, lags.pt = lag, type = "PT.adjusted") # かばん検定
+  res <- c(lag, res$serial$statistic, res$serial$parameter, res$serial$p.value) # ラグ, 検定統計量, 自由度, p 値
+
+  return(res)
+}
+```
+
+# データの概要
+
+日経平均株価を用いて, 現物と先物の関係を分析する.
+
+## データの入手と編集
+
+[Investing.com](https://jp.investing.com/) から次のデータを取得する.
+
+- 日経平均株価 (日経 225)  
+https://jp.investing.com/indices/japan-ni225
+
+- 日経 225 先物  
+https://jp.investing.com/indices/japan-225-futures
+
+```{r}
+N225s <- read_csv("N225s.csv") # 日経平均株価
+N225f <- read_csv("N225f.csv") # 日経 225 先物
+```
+
+データを確認する.
+```{r}
+head(N225s, 5) # 日経平均株価の最初の 5 個を表示
+tail(N225f, 5) # 日経 225 先物の最後の 5 個を表示
+```
+
+日付と終値のみを取り出し, 時系列データに変換する.
+```{r}
+n225s <- N225s[,1:2] # 日付と終値のみを取り出す
+n225f <- N225f[,1:2] 
+n225s <- as.xts(read.zoo(n225s)) # 時系列データに変換
+n225f <- as.xts(read.zoo(n225f))
+```
+
+標本数は次である.
+```{r}
+(T <- length(n225s)) # 日経平均株価の標本数
+length(n225f) # 日経 225 先物の標本数
+```
+
+標本数が異なるので, 日経平均株価に合わせて日経 225 先物を削除する.
+```{r}
+n225 <- cbind(log(n225s), log(n225f)) # データを結合
+names(n225) <- c("log.n225s", "log.n225f") # 名称を変更
+sum(is.na(n225)) # 欠損数
+n225 <- na.omit(n225) # 欠損値を削除
+```
+
+データを確認する.
+```{r}
+head(n225, 5) # 最初の 5 個を表示
+tail(n225, 5) # 最後の 5 個を表示
+```
+
+## 時系列プロット, 記述統計量, コレログラム
+
+```{r}
+plot(n225) # 時系列プロット
+summary(n225) # 記述統計量
+cov(n225) # 共分散行列
+cor(n225) # 相関行列
+```
+
+```{r fig.height = 6}
+acf(n225) # コレログラム
+```
+
+# 単位根検定
+
+まず, 日経平均株価に対して ADF 検定を行う.
+```{r}
+ur.n225s <- ur.df(n225$log.n225s, # 標本
+              type = "trend", # Type 3
+              lags = 20, # AR の最大次数
+              selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.n225s # 検定統計量の値
+ur.n225s@cval # 棄却域
+```
+
+tau3 の値 $`r signif(ur.n225s@teststat[1], 4)`$ は $`r ur.n225s@cval[1,3]`$ より大きいので, 有意水準 $10 \%$ で帰無仮説を棄却できない. よって, 帰無仮説を受容し, 日経平均株価は単位根過程であると判断する.
+
+次に, 日経 225 先物に対して ADF 検定を行う.
+```{r}
+ur.n225f <- ur.df(n225$log.n225f, # 標本
+              type = "trend", # Type 3
+              lags = 20, # AR の最大次数
+              selectlags = "BIC") # BIC を用いて AR 次数を決定
+ur.n225f # 検定統計量の値
+ur.n225f@cval # 棄却域
+```
+
+tau3 の値 $`r signif(ur.n225f@teststat[1], 4)`$ は $`r ur.n225f@cval[1,3]`$ より大きいので, 有意水準 $10 \%$ で帰無仮説を棄却できない. よって, 帰無仮説を受容し, 日経平均株価は単位根過程であると判断する.
+
+# 推定
+
+パッケージ vars を用いて分析を行う.
+
+## 次数の決定
+
+情報量基準を用いて, VAR モデルの次数を決定する.
+```{r}
+(IC <- VARselect(n225, # 標本
+                 lag.max = 20)) # 最大次数
+```
+
+AIC では VAR(`r IC$selection[1]`), BIC では VAR(`r IC$selection[3]`) が選択される.
+
+## 共和分検定
+
+ここでは, AIC の結果を用いて検定を行う.
+```{r}
+n225.vec1 <- ca.jo(n225, # 標本
+                 ecdet = "const", # 共和分関係に定数項を含める
+                 type = "eigen", # 最大固有値検定
+                 K = IC$selection[1], # AIC による次数
+                 spec = "transitory") # 均衡からのずれの影響は短期的
+n225.vec2 <- ca.jo(n225, # 標本
+                 ecdet = "const", # 共和分関係に定数項を含める
+                 type = "trace", # トレース検定
+                 K = IC$selection[1], # AIC による次数
+                 spec = "transitory") # 均衡からのずれの影響は短期的
+summary(n225.vec1) # 最大固有値検定の結果
+summary(n225.vec2) # トレース検定の結果
+```
+
+```{r}
+# 参考
+n225.vec3 <- ca.jo(n225, # 標本
+                 ecdet = "const", # 共和分関係に定数項を含める
+                 type = "eigen", # 最大固有値検定
+                 K = IC$selection[3], # BIC による次数
+                 spec = "longrun") # 均衡からのずれの影響は長期的
+```
+
+最大固有値検定において, 検定統計量の値 $`r signif(n225.vec1@teststat[2], 4)`$ は $`r n225.vec1@cval[2,3]`$ より大きいので, 有意水準 $1 \%$ で帰無仮説 (共和分関係はない) を棄却できる. よって, 共和分関係があると判断する.
+
+トレース検定において, 検定統計量の値 $`r signif(n225.vec2@teststat[2], 4)`$ は $`r n225.vec2@cval[2,3]`$ より大きいので, 有意水準 $1 \%$ で帰無仮説 (共和分関係はない) を棄却できる. よって, 共和分関係があると判断する.
+
+共和分ベクトルは次である.
+```{r}
+cajorls(n225.vec1, r = 1)$beta
+# cajorls(n225.vec2, r = 1)$beta # 同じ結論が得られる
+```
+
+よって, 次の均衡関係 (共和分関係) があると判断できる.
+$$
+\log (\text{N225s}) = `r -signif(cajorls(n225.vec1, r = 1)$beta[3], 4)` + `r -signif(cajorls(n225.vec1, r = 1)$beta[2], 4)` \log (\text{N225f})
+$$
+
+比較の為, 日経 225 先物で規準化する.
+$$
+\log (\text{N225f}) = `r -signif(cajorls(n225.vec1, r = 1)$beta[3] / cajorls(n225.vec1, r = 1)$beta[2], 4)` + `r -signif(1 / cajorls(n225.vec1, r = 1)$beta[2], 4)` \log (\text{N225s})
+$$
+
+## モデル診断
+
+VECM を VAR に戻す.
+```{r}
+n225.var1 <- vec2var(n225.vec1)
+```
+
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. かばん検定を行う. 
+```{r}
+m <- 10 # 最大ラグ
+lag <- 1:m + IC$selection[1] # ラグ (1, ..., m) + p
+res.port1 <- sapply(lag, port.v, x = n225.var1) # x に対して各 lag の port.v を計算
+
+digits <- c(0, 2, 0, 4) # 少数点以下の最大表示桁数
+col.names <- c("$m$", "$Q(m)$", "自由度", "$p$ 値") # 列名
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "VECM の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, VECM モデルは妥当である．
+
+# 分析
+
+## インパルス応答関数
+
+$1$ 標準偏差のショックを与えたときの直交化 IRF を計算しプロットする. 
+```{r}
+n225.irf1 <- irf(n225.var1) # IRF
+plot(n225.irf1) # IRF をプロット
+```
+
+# 補足
+
+## VAR モデルを用いた分析
+
+```{r}
+M1 <- VAR(n225, lag.max = 20, ic = "AIC") # AIC によるモデルの推定
+```
+
+AIC により推定される VAR(`r IC$selection[1]`) を Model 1 とし, IRF を計算しプロットする. VECM と同じ結論が得られる.
+```{r}
+M1.irf <- irf(M1) # IRF
+plot(M1.irf) # IRF をプロット
+```
+
+## 対数収益率を用いた分析
+
+対数収益率 (%) に変換する.
+```{r}
+n225s.r <- diff(n225$log.n225s) * 100 # 日経平均株価
+n225f.r <- diff(n225$log.n225f) * 100 # 日経 225 先物
+n225.r <- cbind(n225s.r, n225f.r) # データを結合
+names(n225.r) <- c("log.return.n225s", "log.return.n225f") # 名称を変更
+sum(is.na(n225.r)) # 欠損数
+n225.r <- na.omit(n225.r) # 欠損値を削除
+```
+
+### 時系列プロット, 記述統計量, コレログラム
+
+```{r}
+plot(n225.r) # 時系列プロット
+summary(n225.r) # 記述統計量
+cov(n225.r) # 共分散行列
+cor(n225.r) # 相関行列
+```
+
+```{r fig.height = 6}
+acf(n225.r) # コレログラム
+```
+
+### 次数の決定
+
+情報量基準を用いて, VAR モデルの次数を決定する.
+```{r}
+(IC.r <- VARselect(n225.r)) # 情報量基準
+```
+
+AIC では VAR(`r IC.r$selection[1]`), BIC では VAR(`r IC.r$selection[3]`) が選択される.
+
+### パラメータの推定
+
+AIC の結果を用いて推定を行う.
+```{r}
+M1.r <- VAR(n225.r, lag.max = 10, ic = "AIC") # AIC によるモデルの推定
+```
+
+AIC により推定される VAR(`r IC.r$selection[1]`) を Model 1r とする.
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. かばん検定を行う. 
+```{r}
+m <- 10 # 最大ラグ
+lag <- 1:m + IC$selection[1] # ラグ (1, ..., m) + p
+res.port1 <- sapply(lag, port.v, x = M1.r) # x に対して各 lag の port.v を計算
+
+digits <- c(0, 2, 0, 4) # 少数点以下の最大表示桁数
+col.names <- c("$m$", "$Q(m)$", "自由度", "$p$ 値") # 列名
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "VECM の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.01$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, 残差に自己相関があると判断できるので, モデルは妥当でない．
+
+共和分関係があるから, 差分系列に対する結果は VECM と大きく異なる. モデルが妥当である場合は, 均衡関係を考慮しない短期的な関係が得られる.
+
+## 回帰分析
+
+被説明変数を日経平均株価, 説明変数を日経 225 先物として回帰分析を行う.
+```{r}
+lm1 <- lm(n225$log.n225f ~ n225$log.n225s) # 回帰分析
+summary(lm1) # 結果を表示
+```
+
+共和分関係があるから, 共和分関係とほぼ同じ結論が得られる. しかし, 見せかけの回帰の批判に反論することが困難であるので, 共和分検定を行うべきである. さらに, $p$ 値の計算方法も異なるので注意が必要である.
+$$
+\log (\text{N225f}) = `r signif(lm1$coefficients[1], 4)` + `r signif(lm1$coefficients[2], 4)` \log (\text{N225s}) + \varepsilon 
+$$
+
+次に, 対数収益率を用いて回帰分析を行う. 
+```{r}
+lm1.r <- lm(n225.r$log.return.n225f ~ n225.r$log.return.n225s) # 回帰分析
+summary(lm1.r) # 結果を表示
+```
+
+対数収益率は定常であるから, 通常の分析が可能であり, 結論は次である. 
+$$
+\Delta \log (\text{N225f}) = `r signif(lm1.r$coefficients[2], 4)` \Delta \log (\text{N225s}) + \varepsilon 
+$$

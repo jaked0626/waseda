@@ -1,0 +1,212 @@
+---
+title: "Untitled"
+author: "Jake Underland"
+date: "6/9/2020"
+output: html_document
+---
+
+
+install.packages("tidyverse")
+library("tidyverse")
+
+theme_set(theme_gray(base_size = 10, base_family = "HiraginoSans-W3"))
+#Mac の文字化けを防止する
+
+
+# 1. 変数の種類を確認する　　
+変数の種類に応じて使用できる統計手法が異なる　　
+
+量的変数　　
+
+カテゴリ変数 (質的変数）
+        
+
+# 2. Download Data
+
+download.file(url = "https://git.io/fACk6", destfile = "data/hr96-17.Rds")
+HR <- read_rds("data/hr96-17.Rds")
+glimpse(HR)
+
+# 3. View Basic Stats
+```{r}
+summary(HR)
+```
+To pull one variable and view its stats, use $ mark
+
+```{r}
+sd(HR$voteshare)
+```
+```{r}
+mean(HR$age)
+```
+#to exclude NA blanks in data, stipulate na.rm = TRUE (NA remove)
+
+```{r}
+mean(HR$age, na.rm = TRUE)
+```
+
+
+# 4. Viewing content of categorical variables
+
+
+```{r}
+table(HR$wl) 
+or with(HR, table(wl))
+```
+(0 - loss, 1 - win, 2 - lost at small district but overturned and won with proportional voting)
+
+#カテゴリ変数の各カテゴリに名前を付けたいときは，factor()を使ってカテゴリ変数のclass属性を因子(factor)型に変える．変数のclassはclass()で確認できる．
+
+```{r}
+class(HR$wl)
+```
+
+```{r}
+HR <- HR %>%
+  mutate(wl = factor(wl, levels = 0:2, labels = c("落選", "当選", "復活当選")))
+
+
+class(HR$wl)
+```
+
+```{r}
+with(HR, table(wl))
+```
+
+```{r}
+HR <- HR %>%
+  mutate(status = factor(status, levels = 0:2, 
+                         labels = c("新人", "現職", "元職")))
+```
+```{r}
+with(HR, table(status))
+```
+
+
+```{r}
+HR <- HR %>%
+  mutate(smd = factor(smd, levels = 0:1, 
+                         labels = c("落選", "当選")))
+```
+```{r}
+table(HR$smd)
+```
+
+# 5. Viewing the relationship of variables
+
+```{r}
+with(HR, table(status, wl))
+```
+
+```{r}
+HR %>%
+  filter(year == 2009) %>%
+  with(table(status, wl))
+```
+
+# 6. Examining quantitative variables by category
+
+```{r}
+HR %>%
+  group_by(status) %>%
+  summarize(mean = mean(voteshare),
+            median = median(voteshare),
+            sd = sd(voteshare))
+```
+
+```{r}
+HR %>% 
+  group_by(status) %>%
+  summarize(age = mean(age, na.rm = TRUE),
+            voteshare = mean(voteshare),
+            exp = mean(exp, na.rm = TRUE))
+```
+
+# 7. Visualizing Variables 
+
+```{r}
+scat1 <- ggplot(data = HR, 
+                mapping = aes(x = expm, y = voteshare))
+```
+```{r}
+scat1 <- scat1 + geom_point()
+```
+```{r}
+scat1 <- scat1 + 
+  labs(x = "選挙費用(100万円)",
+       y = "得票率(%)",
+       title = "散布図の例1：衆院選挙, 1996-2014"
+       )
+```
+```{r}
+print(scat1)
+```
+
+```{r}
+scat2 <- HR %>%
+  filter(year == 1996) %>%
+  ggplot(aes(x = expm, y = voteshare)) +
+  geom_point() +
+  labs(
+    x = "選挙費用(100万円 )",
+    y = "得票率(%)",
+    title = "散布図の例2：衆院選挙, 1996"
+  )
+```
+```{r}
+print(scat2)
+```
+
+```{r}
+ggplot(HR, aes(x = expm))+
+  geom_histogram(color = "red") +
+  labs(x = "Election Expenditure (100万円)",
+       y = "Frequency",
+       title = "Histogram 1")
+```
+
+＃5数要約＝最小値，Q1，Q2，Q3，最大値
+
+```{r}
+fivenum(HR$age)
+```
+
+箱髭図
+
+```{r}
+box1 <- HR %>%
+  filter(year == 2009) %>%
+  filter(party %in% c("LDP", "DPJ", "CGP", "SDP", "JCP")) %>%
+  ggplot(aes(x = party_jpn, y = expm)) +
+  geom_boxplot() +
+  labs(x = "政党", y = "選挙費用(100万円 )", title =　"政党別選挙費用の箱ひげ図")
+```
+```{r}
+print(box1)
+```
+
+```{r}
+vln1 <- HR %>%
+  filter(year == 2009) %>%
+  filter(party %in% c("LDP", "DPJ", "CGP", "SDP", "JCP")) %>%
+  ggplot(aes(x = party_jpn, y = expm)) +
+  geom_violin() +
+  geom_boxplot(fill = "red", width = 0.1)
+  labs(x = "政党", y = "選挙費用(100万円 )", title =　"政党別選挙費用のバイオリン図")
+```
+```{r}
+print(vln1)
+```
+
+# 8. Save Figures
+
+dir.create("figs")
+
+quartz(file = "figs/vln1.pdf", type = "pdf", family = "sans", width = 3, height = 3, pointsize = 10)
+print(vln1)
+dev.off()
+
+
+#must complete all 3 steps to save figures for figures containing Japanese, print will not reveal image of figure. 
+
+q()

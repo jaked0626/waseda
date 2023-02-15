@@ -1,0 +1,119 @@
+---
+title: "Ch 5 Practice"
+author: "Jake Underland"
+date: "6/9/2020"
+output: html_document
+---
+
+# 1. Read Data
+
+```{r}
+HR <- readr::read_csv("/Users/jakeunderland/Documents/Quantitative Analysis (Politics)/R projects/quant-methods/data/hr96-17.csv", na=".")
+```
+
+# 2. Check content of Data
+  
+  
+  #glimpse(HR)  
+  affects knit process so conduct command in console. 
+-> ## 8803 observations, 17 variables
+
+# 3. Mutate Data
+
+```{r}
+HR <- mutate(HR, expm = exp / 10^6)
+```
+#一円単位から百万円単位へ支出を変換
+```{r}
+HR <- mutate(HR, vs = voteshare / 100, exppv = exp / eligible)
+```
+#voteshare を percent から decimal 表記，選挙費用expを有権者数eligibleで割って有権者一人当たりの選挙費用を出す．
+
+# 4. Creating New Data that responds differently to certain Variables  
+
+Use mutate and ifelse  
+
+```{r}
+HR <- mutate(HR, smd = ifelse(wl == 1, 1, 0))
+
+```
+#smd は小選挙区で当選した場合1，落選した場合0という新たなデータを作ってHRに加えた．既存のwlという変数は小選挙区での当選は1，落選は0，小選挙区で落選して比例で当選を2としている．そのため，ifelseでは1の時1，その他0というふうに指示する．
+```{r}
+with(HR, table(smd, wl))
+```
+
+# 5. Filter
+
+```{r}
+HR96 <- filter(HR, year == 1996)
+HRnonLDP <- filter(HR, party != "LDP")
+HR17nonLDP <- filter(HR, year == 2017, party != "LDP")
+
+```
+
+# 6. Select and Create New Data Frame From Exsiting Data Frame
+
+```{r}
+HR_sml_1 <- select(HR, party, vs, exppv)
+```
+#exppv = expenditure per voter, created using mutate
+
+```{r}
+HR_sml_2 <- select(HR, -voteshare, -exp)
+```
+#negative subtracts variables from original data frame
+
+```{r}
+pull(HR, age)
+```
+#pulls single specified variable out of data frame. 
+
+# 7. Arranging order of data
+
+```{r}
+HR_sorted_1 <- arrange(HR, voteshare)
+HR_sorted_2 <- arrange(HR, desc(voteshare))
+```
+#ascending and descending order based on voteshare
+
+# 8. Renaming Variables 
+
+```{r}
+HR_sorted_3 <- rename(HR_sorted_2, district = ku)
+```
+#renamed variable ku to district. 
+
+# 9. パイプ演算子　
+
+makes it easier to conduct commands in order.   
+for example:
+
+```{r}
+HR09 <- HR %>%
+  filter(year == 2009) %>%
+  arrange(desc(voteshare)) %>%
+  mutate(order = 1:n()) %>%
+  arrange(ku, kun, party) %>%
+  filter(age > 40) %>%
+  select(ku, kun, party, name, order)
+```
+#%>% allows immediately preceding data frame to be substituted as data frame. The orders conducted here are 1. filter by year, 2. reorder voteshare of 2009 in descending order 3. add variable "order" in voteshare of 2009 that expresses rank based on share of votes 4. reorder 2009 data in party order for each district(ku), 5. filter out nominees younger than or equal to age 40, 6. create data frame with just the variables ku, kun, party, name, order. 
+
+in a sequence such as 
+```{r}
+(10 - 2) %>% seq(from = 2, to = ., by = 2)
+
+``` 
+data is substituted where the period is. 
+
+# 10. Saving Data
+
+save modified HR as a different data set.
+readr::write_rds(HR, path = "data/hr96-17_modified.Rds")
+```{r}
+readr::write_rds(HR, path = "data/hr96-17_modified.Rds")
+```
+
+
+
+

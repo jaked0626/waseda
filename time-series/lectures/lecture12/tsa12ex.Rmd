@@ -1,0 +1,404 @@
+---
+title: 時系列分析 第 12 回 分析例
+subtitle: GARCH モデル
+author: Kenichiro Tamaki
+date: 2022 年 6 月 27 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE)
+```
+
+<p><br></p>
+
+# 金融時系列データの分析例
+
+## 分析手順
+
+1. 収益率の自己相関を調べる (条件付期待値のモデル化)
+
+    1. 相関がある場合は, 収益率に ARMA モデルをあてはめる $\Rightarrow$ 2.1
+
+    1. 相関がない場合は, 何もしない $\Rightarrow$ 2.2
+
+1. 2 乗系列の自己相関を調べる
+
+    1. ARMAモデルの残差の 2 乗系列の自己相関を調べる $\Rightarrow$ 3.1
+
+    1. 収益率の 2 乗系列の自己相関を調べる $\Rightarrow$ 3.2
+
+1. 2 乗系列に自己相関がある場合 (条件付分散のモデル化)
+
+    1. 収益率に ARMA-GARCH モデルを用いる
+
+    1. 収益率に GARCH モデルを用いる
+
+## パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(readxl) # xls ファイルの読込
+library(quantmod) # 時系列データに変換
+library(lmtest) # 時系列モデルにおける p 値
+library(rugarch) # GARCH モデル
+```
+
+## 関数の作成
+
+自作関数は次である.
+
+**かばん検定**
+
+```{r}
+port <- function(x, lag, fitdf) { # x = 標本, lag = ラグ, fitdf = 自由度の減数
+  res <- Box.test(x, lag = lag, type = "Ljung-Box", fitdf = fitdf) # かばん検定
+  res <- c(lag, res$statistic, res$parameter, res$p.value) # ラグ, 検定統計量, 自由度, p 値
+  names(res) <- c("m", "Q(m)", "df", "p.value") # 名称
+
+  return(res)
+}
+```
+
+**情報量規準**
+
+```{r}
+ic.arma <- function(x, Lp, Lq) { # x = 標本, Lp = AR 最大次数, Lq = MA 最大次数
+  # 結果を代入する変数
+  res.aic <- matrix(0, Lp + 1, Lq + 1) # AIC
+  res.bic <- matrix(0, Lp + 1, Lq + 1) # BIC
+  res.order <- matrix(0, 2, 2) # ARMA 次数
+
+  aic0 <- Inf # AIC の最小値の初期値
+  bic0 <- Inf # BIC の最小値の初期値
+
+  T <- length(x) # 標本数
+
+  for (p in 0:Lp) { # p は 0 から Lp まで繰り返す
+    for (q in 0:Lq) { # q は 0 から Lq まで繰り返す
+      # ARMA(p, q) の推定
+      est <- arima(x, # 標本
+                   order = c(p, 0, q), # AR 次数, MA 次数
+                   method = "ML") # 最尤法
+
+      if (est$code == 0) { # 最適化が収束する場合
+        res.aic[p + 1, q + 1] <- AIC(est) / T # ARMA(p, q) の AIC
+        res.bic[p + 1, q + 1] <- BIC(est) / T # ARMA(p, q) の BIC
+
+        if (res.aic[p + 1, q + 1] < aic0) { # AIC が最小値より小さい場合
+          res.order[1,] <- c(p, q) # AIC を最小にする次数
+          aic0 <- res.aic[p + 1, q + 1] # AIC の最小値を更新
+        }
+        if (res.bic[p + 1, q + 1] < bic0) { # BIC が最小値より小さい場合
+          res.order[2,] <- c(p, q) # BIC を最小にする次数
+          bic0 <- res.bic[p + 1, q + 1] # BIC の最小値を更新
+        }
+      } else { # 最適化が収束しない場合
+        res.aic[p + 1, q + 1] <- NA # 欠損値
+        res.bic[p + 1, q + 1] <- NA # 欠損値
+      }
+    }
+  }
+
+  res.aic <- cbind(0:Lp, res.aic) # AR 次数を追加
+  colnames(res.aic) <- c("p ＼ q", 0:Lq) # AIC の列名
+  res.bic <- cbind(0:Lp, res.bic) # AR 次数を追加
+  colnames(res.bic) <- c("p ＼ q", 0:Lq) # BIC の列名
+  rownames(res.order) <- c("AIC", "BIC") # ARMA 次数の行名
+  colnames(res.order) <- c("AR", "MA") # ARMA 次数の列名
+
+  return(list(AIC = res.aic, BIC = res.bic, order = res.order))
+}
+```
+
+## データ
+
+MSCI が提供している株式指数を用いる.
+
+- https://www.msci.com/
+
+上記の「Solutions」→「Indexes」→「PERFORMANCE
+」→「End of Day Index Data Search」から, 様々なデータ (xls ファイル) をダウンロードできる. 
+
+ここでは, 次のデータを用いる.
+
+- 2012 年 1 月から 2015 年 12 月までの 4 年間の日次株式指数
+
+- 日本, イギリス, アメリカの 3 カ国
+
+ファイル名をそれぞれ「JP.xls」,「UK.xls」, 「US.xls」とする. 必要ない箇所を削除し, さらに, 文字列形式であるから Excel か R で変換する必要がある. ファイルは, 1列目は日付, 2列目は数値に変換済とする.
+
+RStudio の右上にある「Environment」→「Import Dateset」→「From Excel..」において, xls ファイルの読込が出来る. または, 次を実行する.
+
+```{r}
+JP <- read_excel("JP.xls") # 日本
+UK <- read_excel("UK.xls") # イギリス
+US <- read_excel("US.xls") # アメリカ
+```
+
+時系列に変換する.
+
+```{r}
+JP <- as.xts(read.zoo(JP)) # 日本
+UK <- as.xts(read.zoo(UK)) # イギリス
+US <- as.xts(read.zoo(US)) # アメリカ
+MSCI <- cbind(JP, UK, US) # データを結合
+```
+
+対数収益率 ($\%$) に変換する.
+
+```{r}
+JP.r <- dailyReturn(MSCI$JP, type = 'log') * 100 # 日本
+UK.r <- dailyReturn(MSCI$UK, type = 'log') * 100 # イギリス
+US.r <- dailyReturn(MSCI$US, type = 'log') * 100 # アメリカ
+MSCI.r <- cbind(JP.r, UK.r, US.r) # データを結合
+names(MSCI.r) <- names(MSCI) # 名称を変更
+```
+
+株式指数, 対数収益率, 対数収益率の 2 乗について, 時系列とコレログラムをプロットする.
+
+```{r}
+plot(MSCI) # 株式指数の時系列プロット
+acf(coredata(MSCI)) # 株式指数のコレログラム
+plot(MSCI.r) # 対数収益率の時系列プロット
+acf(coredata(MSCI.r)) # 対数収益率のコレログラム
+plot(MSCI.r^(2)) # 対数収益率の 2 乗の時系列プロット
+acf(coredata(MSCI.r)^(2)) # 対数収益率の 2 乗のコレログラム
+```
+
+## 日本の MSCI 株式指数
+
+```{r fig.height = 9, fig.width = 9}
+JP.r <- MSCI.r$JP # 日本の MSCI 株式指数の対数収益率
+par(mfrow = c(3, 2)) # 画面を 3 × 2 に分割
+plot(JP.r) # 時系列プロット
+plot(JP.r^(2)) # 2 乗の時系列プロット
+acf(coredata(JP.r)) # ACF
+acf(coredata(JP.r)^(2)) # 2 乗のACF
+pacf(coredata(JP.r)) # PACF
+pacf(coredata(JP.r)^(2)) # 2 乗の PACF
+```
+
+### 条件付期待値のモデル化
+
+条件付期待値のモデルを考える. まず, ACF と PACF より 対数収益率に自己相関があると判断できる. 次に, ACF と PACF は減衰しているので定常過程である. 上記で作成した関数を用いて, ARMA モデルの次数を決定する.
+
+```{r warning = FALSE}
+Lp <- Lq <- 4 # 最大次数
+res.ic <- ic.arma(JP.r, Lp, Lq) # 情報量規準を計算
+
+digits <- c(0, rep(3, Lq + 1)) # 少数点以下の最大表示桁数
+col.names <- c("$p$ $\\backslash$ $q$", 0:Lq) # 列名
+# AIC の表を作成
+knitr::kable(res.ic$AIC, # AIC
+             digits = digits, # 桁数
+             col.names = col.names, # 列名
+             caption = "日本の MSCI 株式指数の対数収益率に対する ARMA$(p, q)$ の AIC") # 表題
+
+# BIC の表を作成
+knitr::kable(res.ic$BIC, # BIC
+             digits = digits, # 桁数
+             col.names = col.names, # 列名
+             caption = "日本の MSCI 株式指数の対数収益率に対する ARMA$(p, q)$ の BIC") # 表題
+
+# ARMA 次数の表を作成
+knitr::kable(res.ic$order, # ARMA 次数
+             caption = "日本の MSCI 株式指数の対数収益率に対する ARMA$(p, q)$ の 次数") # 表題
+```
+
+AIC では, ARMA$(`r res.ic$order[1,]`)$, BIC では, ARMA$(`r res.ic$order[2,]`)$ が選択される.
+
+ARMA$(`r res.ic$order[2,]`)$ の推定結果は次である.
+
+```{r}
+order.bic <- append(res.ic$order[2,], 0, after = 1) # BIC により選択された次数
+M1 <- arima(JP.r, # 標本
+            order = order.bic, # 次数
+            method = "ML") # 最尤法
+coeftest(M1) # 係数の p 値
+```
+
+平均項が有意でないので, 平均を $0$ として再推定を行う.
+
+```{r}
+M1p <- arima(JP.r, # 標本
+            order = order.bic, # 次数
+            include.mean = FALSE, # 平均は 0
+            method = "ML") # 最尤法
+coeftest(M1p) # 係数の p 値
+```
+
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. 残差に対してかばん検定を行う. 残差に対する検定であるから自由度が減少する.
+
+```{r warning = FALSE}
+(T <- length(JP.r)) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+r1p <- residuals(M1p) # M1p の残差
+fitdf <- 1 # 自由度の減数
+lag <- 1:(2 * m) + fitdf # ラグ (1, ..., 2m) + fitdf
+res.port1 <- sapply(lag, port, x = r1p, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$ 値"), # 列名
+             caption = "Model 1p の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全ての自由度において $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, モデルは妥当である. 
+
+### 2 乗系列の自己相関
+
+残差の 2 乗系列の自己相関を調べる. 残差の 2 乗に対して, ACF と PACF をプロットする.
+
+```{r fig.height = 4, fig.width = 9}
+par(mfrow = c(1, 2)) # 画面を 1 × 2 に分割
+acf(coredata(r1p)^(2)) # AFC
+pacf(coredata(r1p)^(2)) # PACF
+```
+
+残差の 2 乗に自己相関があると判断できる.
+
+### 条件付分散のモデル化
+
+パッケージ rugarch を用いて, 対数収益率に ARMA(`r res.ic$order[2,]`) - GARCH$(m, r)$ をあてはめる. 
+
+- まず, モデルの定式化を行う 
+
+  - $m = 1, 2, 3$, $r = 0, 1, 2$, $r + m \le 3$ の BIC を調べる為に, 6 つのモデルを用意する
+  
+  - 多くの場合, GARCH$(1, 1)$ を選択するので, 上記で十分である (必要があれば変更する)
+
+- 次に, モデルの推定を行う 
+
+```{r}
+# ARMA(p, q) の定式化
+mean.model <- list(armaOrder = res.ic$order[2,], # ARMA 次数
+                   include.mean = FALSE) # 平均項
+
+# GARCH(1, 0) の定式化
+garch10 <- ugarchspec(variance.model = list(model = "sGARCH", # standard GARCH
+                                            garchOrder = c(1, 0)), # GARCH(1, 0)
+                      mean.model = mean.model) # 平均項
+# GARCH(2, 0) の定式化
+garch20 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                            garchOrder = c(2, 0)), # GARCH(2, 0)
+                      mean.model = mean.model)
+# GARCH(1, 1) の定式化
+garch11 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                            garchOrder = c(1, 1)), # GARCH(1, 1)
+                      mean.model = mean.model)
+# GARCH(3, 0) の定式化
+garch30 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                            garchOrder = c(3, 0)), # GARCH(3, 0)
+                      mean.model = mean.model)
+# GARCH(2, 1) の定式化
+garch21 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                            garchOrder = c(2, 1)), # GARCH(2, 1)
+                      mean.model = mean.model)
+# GARCH(1, 2) の定式化
+garch12 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                            garchOrder = c(1, 2)), # GARCH(1, 2)
+                      mean.model = mean.model)
+```
+
+次に, モデルの推定行う
+
+```{r}
+JP.r.g10 <- ugarchfit(spec = garch10, data = JP.r) # ARMA(1, 0) - GARCH(1, 0)
+JP.r.g20 <- ugarchfit(spec = garch20, data = JP.r) # ARMA(1, 0) - GARCH(2, 0)
+JP.r.g11 <- ugarchfit(spec = garch11, data = JP.r) # ARMA(1, 0) - GARCH(1, 1)
+JP.r.g30 <- ugarchfit(spec = garch30, data = JP.r) # ARMA(1, 0) - GARCH(3, 0)
+JP.r.g21 <- ugarchfit(spec = garch21, data = JP.r) # ARMA(1, 0) - GARCH(2, 1)
+JP.r.g12 <- ugarchfit(spec = garch12, data = JP.r) # ARMA(1, 0) - GARCH(1, 2)
+```
+
+情報量基準を表示する.
+
+```{r}
+cbind(infocriteria(JP.r.g10),
+      infocriteria(JP.r.g20),
+      infocriteria(JP.r.g11),
+      infocriteria(JP.r.g30),
+      infocriteria(JP.r.g21),
+      infocriteria(JP.r.g12))
+```
+
+BICより, ARMA(1, 0) - GARCH(1, 1) を選択する.
+
+```{r}
+JP.r.g11 # ARMA(1, 0) - GARCH(1, 1) の推定結果
+```
+
+モデル診断を行う.
+
+- 残差の自己相関に対するかばん検定    
+Weighted Ljung-Box Test on Standardized Residuals
+ 
+
+- 残差の2乗系列に対するかばん検定   
+Weighted Ljung-Box Test on Standardized Squared Residuals
+
+全てにおいて $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない．残差と残差の 2 乗に自己相関があると判断できないので, モデルは妥当であると判断する．
+
+```{r fig.height = 6, fig.width = 9}
+plot(JP.r.g11, which = "all") # モデル診断のプロット
+```
+
+よって, 対数収益率のモデルは次である.
+
+$$
+\begin{align}
+& y_{t} = `r signif(coef(JP.r.g11)[1], 3)` y_{t-1} + \sqrt{h_{t}} u_{t}, \\
+& h_{t} = `r signif(coef(JP.r.g11)[2], 3)` + `r signif(coef(JP.r.g11)[4], 3)` h_{t-1} + `r signif(coef(JP.r.g11)[3], 3)` u_{t-1}^{2}
+\end{align}
+$$
+
+- $\omega > 0$, $\alpha_{1}, \beta_{1} \ge 0$ より, パラメータは制約条件を満たす
+
+- $\alpha_{1} + \beta_{1} = `r signif(coef(JP.r.g11)[3] + coef(JP.r.g11)[4], 3)` < 1$ より, 定常性を満たす
+
+### 予測
+
+$n$日-$X\%$VaRとは, $n$日後の資産価値の評価において, 信頼水準$X\%$の最大損失である.
+
+$$
+\Pr (\text{損失} \ge \text{VaR}) = 1 - X
+$$
+
+つまり, 損失がVaRを超える確率が$1-X$である. 一般的に, 1日-$99\%$VaR, 5日-$99\%$VaR, 10日-$99\%$VaRなどを計算し, 資産評価を行う.
+
+```{r}
+JP.r.g11.f <- ugarchforecast(JP.r.g11, n.ahead = 10) # 10　期先予測
+JP.r.g11.f
+```
+
+1日-$90\%$VaR
+
+```{r}
+- JP.r.g11.f@forecast$sigmaFor[1] * qnorm(0.9)
+```
+
+5日-$95\%$VaR
+
+```{r}
+- JP.r.g11.f@forecast$sigmaFor[5] * sqrt(5) * qnorm(0.95)
+```
+
+10日-$99\%$VaR
+
+```{r}
+- JP.r.g11.f@forecast$sigmaFor[10] * sqrt(10) * qnorm(0.99) 
+```

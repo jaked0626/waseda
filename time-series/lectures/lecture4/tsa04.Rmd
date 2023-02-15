@@ -1,0 +1,365 @@
+---
+title: 時系列分析 第 4 回
+subtitle: ARMA 過程 2
+author: Kenichiro Tamaki
+date: 2022 年 5 月 2 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<p><br></p>
+
+# 2 ARMA 過程 {-}
+
+## 2.3 ARMA モデルの推定 {-}
+
+### 2.3.1 最小二乗法 {-}
+
+**線形回帰モデル (linear regression model)**
+
+線形単回帰モデル (simple linear regression model) は次である.
+$$
+y_{t} = \alpha + \beta x_{t} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2})
+$$
+
+- $y_{t}$: 被説明変数 (dependent variable)
+
+- $x_{t}$: 説明変数 (independent variable) 
+
+- $\varepsilon_{t}$: 誤差項 (error term)
+ 
+- $\alpha$: 定数項 (intercept term)
+
+- $\beta$: 回帰係数 (regression coefficient)
+
+- 定数以外の説明変数が 1 つの線形回帰モデル
+
+線形重回帰モデル (multiple linear regression model) は次である.
+$$
+y_{t} = \alpha + \beta_{1} x_{1t} + \dots + \beta_{p} x_{pt} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2})
+$$
+
+- 定数以外の説明変数が複数ある線形回帰モデル
+
+**最小二乗法 (ordinary least squares, OLS)**
+
+AR 過程は線形回帰モデル (AR(1) は線形単回帰モデル, AR($p$) は線形重回帰モデル) であるから, 最小二乗法により係数を推定できる.
+
+次の AR(1) を考える.
+$$
+y_{t} = c + \phi y_{t - 1} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2})
+$$
+
+$\tilde{c}$, $\tilde{\phi}$ を $c$, $\phi$ の任意の推定量とする. 残差 (residual) $e_{t} = y_{t} - \tilde{c} - \tilde{\phi} y_{t - 1}$ に対して,
+残差平方和 (sum of squared residuals)
+$$
+S(\tilde{c}, \tilde{\phi}) = \sum_{t = 1}^{T} e_{t}^{2} = \sum_{t = 1}^{T} \left( y_{t} - \tilde{c} - \tilde{\phi} y_{t - 1} \right)^{2}
+$$
+を最小にする $\tilde{c}$, $\tilde{\phi}$ を最小二乗推定量 (OLS estimator or least squares estimator, LSE) といい, 次の正規方程式 (normal equations) を解くことにより得られる.
+\begin{align*}
+& \frac{\partial S}{\partial \tilde{c}} = -2 \sum_{t = 1}^{T} \left( y_{t} - \tilde{c} - \tilde{\phi} y_{t - 1} \right) = 0 \\
+& \frac{\partial S}{\partial \tilde{\phi}} = -2 \sum_{t = 1}^{T} y_{t - 1} \left( y_{t} - \tilde{c} - \tilde{\phi} y_{t - 1} \right) = 0
+\end{align*}
+
+これより, 最小二乗推定量 $\hat{c}$, $\hat{\phi}$ は次である.
+\begin{align*}
+& \hat{c} = \bar{y}_{t} - \hat{\phi} \bar{y}_{t - 1} \\
+& \hat{\phi} = \frac{\sum_{t = 1}^{T} (y_{t} - \bar{y}_{t}) (y_{t - 1} - \bar{y}_{t - 1})}{\sum_{t = 1}^{T} (y_{t - 1} - \bar{y}_{t - 1})^{2}} \\
+& \bar{y}_{t} = \frac{1}{T} \sum_{t = 1}^{T} y_{t}
+\end{align*}
+
+誤差項の分散の最小二乗推定量 $s^{2}$ は次である.
+$$
+s^{2} = \frac{1}{T - 2} \sum_{t = 1}^{T} \left( y_{t} - \hat{c} - \hat{\phi} y_{t - 1} \right)^{2}
+$$
+
+AR(1) の推定には初期値 $y_{0}$ が必要である. 同様に, AR($p$) の推定には $p$ 個の初期値が必要である.
+
+> **定理 2.4 (最小二乗推定量の性質, p.42)**  
+(1) 最小二乗推定量は, 一致推定量 (consistent estimator) である  
+(2) 最小二乗推定量は, 最良線形不偏推定量（best linear unbiased estimator, BLUE）である (ガウス・マルコフの定理, Gauss--Markov theorem)  
+(3) 基準化した最小二乗推定量は, 漸近的に正規分布に従う
+
+### 2.3.2 最尤法 {-}
+
+**尤度関数 (likelihood function)**
+
+同時密度関数 $f(y_{1}, \dots, y_{T}; \theta)$ は, $y_{1}, \dots, y_{T}$ が変数であり, $\theta$ はパラメータである. 同時密度において, パラメータ $\theta$ を変数とした関数 $L(\theta; y_{1}, \dots, y_{T}) = f(y_{1}, \dots, y_{T}; \theta)$ を尤度関数という.
+
+尤度関数と同時密度関数は同じであり, 変数の解釈が異なるだけである. 尤度関数を最大にする $\theta$ を最尤推定量 (maximum likelihood estimator, MLE) という.
+
+- (対数) 尤度関数が最大 ⇔ (対数) 同時密度関数が最大 (多くの場合, 対数尤度関数の方が計算が容易)
+  
+- <span style="color: rgb(255, 0, 0);">最尤法は, 得られた観測値をモデルが最も実現しやすくなるようにパラメータを選択する
+
+- 最小二乗法は, モデルで説明できない部分が最小になるようにパラメータを選択する
+
+**例1**
+
+次を考える.
+$$
+y_{t} \sim \text{iid } N(\mu, \sigma^{2}) \quad (t = 1, \dots, T), \quad \theta = (\mu, \sigma^{2})
+$$
+
+- 同時密度関数
+\begin{align*}
+f(y_{1}, \dots, y_{T}; \theta) &= \prod_{t = 1}^{T} f(y_{t}; \theta) \\
+&= \prod_{t = 1}^{T} \frac{1}{\sqrt{2 \pi \sigma^{2}}} \exp \left\{ - \frac{1}{2 \sigma^{2}} (y_{t} - \mu)^{2} \right\} \\
+&= (2 \pi \sigma^{2})^{- \frac{T}{2}} \exp \left\{ - \frac{1}{2 \sigma^{2}} \sum_{t = 1}^{T} (y_{t} - \mu)^{2} \right\}
+\end{align*}
+
+- 対数尤度関数
+$$
+\mathcal{L}(\theta) = \log f(y_{1}, \dots, y_{T}; \theta) = - \frac{T}{2} \log(2 \pi) - \frac{T}{2} \log(\sigma^{2}) - \frac{1}{2 \sigma^{2}} \sum_{t = 1}^{T} (y_{t} - \mu)^{2}
+$$
+
+**例2**
+
+次の AR(1) を考える.
+$$
+y_{t} = c + \phi y_{t - 1} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } N(0, \sigma^{2}) \quad (t = 1, \dots, T), \quad \theta = (c, \phi, \sigma^{2})
+$$
+
+初期値 $y_{0}$ を含めた同時密度関数を考え, 条件付密度関数に分解する.
+$$
+\begin{align*}
+f(y_{0}, y_{1}, \dots, y_{T}; \theta) &= \frac{f(y_{0}, y_{1}, \dots, y_{T}; \theta)}{f(y_{0}, y_{1}, \dots, y_{T - 1}; \theta)} \times \dots \times \frac{f(y_{0}, y_{1}; \theta)}{f(y_{0}; \theta)} \times f(y_{0}; \theta) \\
+&= f(y_{T} \vert y_{0}, y_{1}, \dots, y_{T - 1}; \theta) \times \dots \times f(y_{1} \vert y_{0}; \theta) \times f(y_{0}; \theta) \\
+&= f(y_{0}; \theta) \prod_{t = 1}^{T} f(y_{t} \vert y_{0}, \dots, y_{t - 1}; \theta)
+\end{align*}
+$$
+
+これより, $y_{0}$ が与えられたときの条件付同時密度関数は次である.
+$$
+\begin{align*}
+f(y_{1}, \dots, y_{T} \vert y_{0}; \theta) &= \frac{f(y_{1}, \dots, y_{T}; \theta)}{f(y_{0}; \theta)} \\
+&= \prod_{t = 1}^{T} f(y_{t} \vert y_{t - 1}; \theta) 
+\end{align*}
+$$
+
+$y_{t} \vert y_{t - 1} \sim N(c + \phi y_{t - 1}, \sigma^{2})$ より, 条件付密度関数は
+$$
+f(y_{t} \vert y_{t - 1}; \theta) = \frac{1}{\sqrt{2 \pi \sigma^{2}}} \exp \left\{ - \frac{1}{2 \sigma^{2}} (y_{t} - c - \phi y_{t - 1})^{2} \right\}
+$$
+であるから, 条件付対数尤度関数は次である.
+$$
+\mathcal{L}(\theta) = \log f(y_{1}, \dots, y_{T} \vert y_{0}; \theta) = - \frac{T}{2} \log(2 \pi) - \frac{T}{2} \log(\sigma^{2}) - \frac{1}{2 \sigma^{2}} \sum_{t = 1}^{T} (y_{t} - c - \phi y_{t - 1})^{2}
+$$
+
+撹乱項が正規分布の場合, 定数と係数の最尤推定量は最小二乗推定量と同じである. 撹乱項の分散の最尤推定量は
+$$
+\hat{\sigma}^{2} = \frac{1}{T} \sum_{t = 1}^{T} \left( y_{t} - \hat{c} - \hat{\phi} y_{t - 1} \right)^{2}
+$$
+であり, 最小二乗推定量と異なる.
+
+最尤推定量は統計的に望ましい性質をもつ.
+
+> **定理 2.5 (最尤推定量の性質, p.46)**  
+(1) 最尤推定量は, 不偏推定量とは限らない  
+(2) 最尤推定量は, 一致推定量である  
+(3) 基準化した最尤推定量は, 漸近的に正規分布に従う  
+(4) 最尤推定量は, 漸近的に<span style="color: rgb(255, 0, 0);">有効 (efficient)</span> である
+
+- 最尤法 (maximum likelihood, ML)
+
+  - 厳密な尤度関数を用いる
+
+  - 正確
+
+  - 時系列モデルでは計算が複雑
+
+- 条件付最尤法 (conditional maximum likelihood, CML)
+
+  - 条件付尤度関数を用いる
+
+  - 時系列モデルでも計算が容易
+
+  - 初期値が必要
+
+- 疑似最尤法 (quasi maximum likelihood, QML)
+
+  - 撹乱項は正規分布でないが, 正規分布として得られる尤度関数を用いる
+
+  - 真の分布が複雑でも計算が容易
+
+  - 漸近的に有効でない
+
+## 2.4 ARMAモデルの選択 {-}
+
+真のモデルが定常かつ反転可能な ARMA($p,q$) とし, 得られた観測値に対して, 最適な ARMA モデルの決定方法を考える.
+
+### 2.4.1 モデル候補の選択 {-}
+
+自己相関と偏自己相関 (partial autocorrelation) を用いて, AR($p$) と MA($q$) の 次数 $p$, $q$ の選択方法を考える.
+
+**偏自己相関係数**
+
+AR(1) では, $y_{t}$ と $y_{t - 1}$ は直接的に相関があるが, $y_{t}$ と $y_{t - k}$ $(k \ge 2)$ は $y_{t - 1}$ を通して間接的に相関があるだけである.
+
+- $k$ 次自己相関係数: $y_{t}$ と $y_{t - k}$ の相関係数
+
+- $k$ 次偏自己相関係数: $y_{t}$ と $y_{t - k}$ から $y_{t - 1}, \dots y_{t - k + 1}$ の影響を取り除いたものの相関係数
+
+これより, AR($p$) では, $k$ $(k \le p)$ 次の偏自己相関係数は $0$ でないが, $k$ $(k > p)$ 次の偏自己相関係数は $0$ である. 
+
+- MA モデル: 自己相関関数 (ACF) に切断がある
+
+- AR モデル: 偏自己相関関数 (partial ACF) に切断がある
+
+表 2.2 (p.48) 自己相関と偏自己相関の性質
+
+| モデル | 自己相関 | 偏自己相関 |
+| ---- | ---- | ---- |
+| AR($p$) | 減衰する | $p + 1$ 次以降 $0$ |
+| MA($q$) | $q + 1$ 次以降 $0$ | 減衰する |
+| ARMA | 減衰する | 減衰する |
+
+```{r}
+T <- 200 # 標本数
+
+# MA(2)
+ma.c = c(-0.6, -0.3) # MA 係数
+ma2 <- arima.sim(list(order = c(0, 0, 2), ma = ma.c), n = T)
+
+# AR(2)
+ar.c = c(0.6, 0.3) # AR 係数
+ar2 <- arima.sim(list(order = c(2, 0, 0), ar = ar.c), n = T)
+```
+
+```{r fig.height = 6, fig.width = 9}
+par(mfrow = c(2, 2)) # プロット画面を 2 行 2 列に分割
+acf(ma2); pacf(ma2) # MA(2) の自己相関; 偏自己相関
+acf(ar2); pacf(ar2) # AR(2) の自己相関; 偏自己相関
+```
+
+一般的に, 減衰と切断の区別は困難であり, 客観的な判断は難しい. また, 
+ARMA モデルに用いることはできない.
+
+### 2.4.2 情報量基準 {-}
+
+カルバック・ライブラー情報量を用いて, 真のモデルと推定に用いるモデルの"距離のようなもの"を考える. 
+
+**カルバック・ライブラー情報量 (Kullback--Leibler divergence)**
+
+\begin{align*}
+D_{\text{KL}} (P \parallel Q) &= \int_{-\infty}^{\infty} p(x) \log \frac{p(x)}{q(x)} dx \\
+&= \int_{-\infty}^{\infty} p(x) \log p(x) dx - \int_{-\infty}^{\infty} p(x) \log q(x) dx
+\end{align*}
+
+- $P$: 真のモデル (未知), $p(x)$: $P$ の密度関数
+
+- $Q$: 推定に用いるモデル, $q(x)$: $Q$ の密度関数
+
+***
+$x > 0$ のとき $\log x \le 2 (\sqrt{x} - 1)$ より
+\begin{align*}
+\int_{-\infty}^{\infty} p(x) \log \frac{p(x)}{q(x)} dx &= -\int_{-\infty}^{\infty} p(x) \log \frac{q(x)}{p(x)} dx \\
+&\ge -\int_{-\infty}^{\infty} 2 p(x) \left( \sqrt{\frac{q(x)}{p(x)}} - 1 \right) dx \\
+&= -\int_{-\infty}^{\infty} 2 \left[ \sqrt{p(x) q(x)} - p(x) \right] dx \\
+&= \int_{-\infty}^{\infty} \left[ \sqrt{p(x)} - \sqrt{q(x)} \right]^{2} dx \\
+&\ge 0
+\end{align*}
+であるから, $P = Q$ のとき $D_{\text{KL}} (P \parallel Q) = 0$, $P \neq Q$ のとき $D_{\text{KL}} (P \parallel Q) > 0$.
+
+***
+
+真のモデル $P$ に対して, $D_{\text{KL}} (P \parallel Q)$ を最小にする $Q$ を最適なモデルと考える. 第 1 項は共通であるから, 第 2 項を情報量規準 (information criterion) としてモデルを選択する. 推定方法により, 複数の情報量規準が存在する.
+
+- 赤池情報量基準 (Akaike's information criterion, AIC): $−2 \mathcal{L}(\hat{\theta}) + 2k$
+
+- Schwartz 情報量規準, ベイズ情報量規準 (SIC, BIC): $−2 \mathcal{L}(\hat{\theta}) + \log(T) k$
+
+  - $\mathcal{L}(\theta)$: 対数尤度
+
+  - $\hat{\theta}$: $\theta$ の最尤推定値
+
+  - $k$: 推定したパラメータの数
+
+  - $T$: 標本数
+
+上記の情報量規準は次の通り解釈できる.
+
+- 第 1 項: モデルの当てはまり (パラメータ数が多いほど小さい)
+
+- 第 2 項: モデルが複雑になることに対する罰則項 (パラメータ数が多いほど大きい)
+
+AIC を用いた AR($p$) の次数 $p$ の選択方法は次である. まず, $p = 0$ のときの AIC, $p = 1$ のときの AIC, ・・・, $p = 10$ のときの AIC, ・・・を計算する. 次に, これらの中で AIC を最小にする $p$ を選択する.
+
+$T \ge 8$ のとき $\log T > 2$ であるから BIC の方が罰則項が大きい. よって, BIC は AIC より次数が小さいモデルを選択する傾向がある. また, AIC と BIC が同一のモデルを選択するとは限らない.
+
+**AICとBICの違い**
+
+真のモデルを AR($p$) とし, AIC と BIC が選択する $p$ をそれぞれ $\hat{p}$, $\tilde{p}$ とする.
+
+- AIC
+
+  - 一致性をもたない
+  $$
+  \lim_{T \to \infty} P(\hat{p} = p) < 1
+  $$
+
+  - 過大評価する傾向がある
+  \begin{align*}
+  & \lim_{T \to \infty} P(\hat{p} < p) = 0 \\
+  & \lim_{T \to \infty} P(\hat{p} > p) > 0
+  \end{align*}
+
+- BIC
+
+  - 一致性をもつ
+  $$
+  \lim_{T \to \infty} P(\tilde{p} = p) = 1
+  $$
+
+  - 過小評価する傾向がある (情報量規準のシミュレーション sim_IC を参照)
+
+- <span style="color: rgb(255, 0, 0);">異なる場合は分析目的によって使い分ける</span>
+
+  - 予測 ⇒ 予測誤差を最小にするモデルが望ましい ⇒ AIC (漸近的に最終予測誤差を最小にする)
+
+  - 解釈 ⇒ 単純なモデルが望ましい ⇒ BIC (罰則項が大きく, 次数の小さいモデルを選択する)
+
+### 2.4.3 モデルの診断 {-}
+
+最適なモデルを選択した後で, そのモデルが妥当かどうかを診断する必要がある. 時系列モデルは自己相関構造をモデル化したものであるから, 残差の自己相関を調べる.
+
+- 残差に自己相関がない ⇒ モデルで自己相関構造が記述できる ⇒ モデルは妥当である
+
+- 残差に自己相関がある ⇒ モデルで自己相関構造が記述できない ⇒ モデルは妥当でない
+
+残差 $\hat{\varepsilon}_{t}$ にかばん検定を行う. モデルが ARMA($p, q$) の場合は
+<span style="color: rgb(255, 0, 0);">
+$$
+Q(m) \overset{d}{\rightarrow} \chi^{2} (m - p - q)
+$$
+</span>
+を用いる. 残差にかばん検定を用いる場合は $Q(m) \overset{d}{\rightarrow} \chi^{2}(m)$ ではなく, 推定した ARMA 係数の数だけ自由度が減少する.
+
+# まとめ {-}
+
+**時系列分析の手順**
+
+1. 分析目的 (予測, 解釈) や観測値の性質 (相関) からモデルを決定  
+1 変量モデル, 多変量モデル, AR, ARMA など
+
+1. 情報量基準 (AIC, BIC など) によりモデルの次数を決定
+
+1. パラメータを推定 (最小二乗法, 最尤法など)  
+分析目的が解釈の場合は, 有意性の検定を行う  
+分析目的が予測の場合は, 有意性の検定は行わない場合が多い
+
+1. モデル診断 (かばん検定)  
+モデルが妥当でない場合は, 1. に戻ってデータの編集 (変換, 追加など) やモデルを変更
+
+<!-- # 参考文献 {-} -->

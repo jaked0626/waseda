@@ -1,0 +1,109 @@
+---
+title: "Setup"
+author: "Jake Underland"
+date:  "`r Sys.Date()`"
+output:
+   html_document:
+     toc: true
+     toc_depth: 3
+     toc_float: true
+---
+</head>
+<body>
+<div id="header">
+</div>
+<div id="TOC">
+<style>
+table, td, th {
+  border: none;F
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+</style>
+<style type="text/css">
+body, td {
+   font-size: 14px;
+}
+</style>
+
+# 1. 必要なパッケージをロードする
+
+```{r}
+library(tidyverse)
+```
+
+# 2. csv ファイルデータを読み込む
+
+```{r}
+df <- read_csv("data/paradox.csv")
+```
+
+# 3. 読み取ったデータの最初の6行だけを表示させる
+```{r}
+head(df)
+```
+
+```{r}
+tail(df)
+```
+
+# 4. 散布図を描く
+
+**time** - 中学2年生の時にゲームに費やした時間（１週間あたり）
+
+**hight** - 中学2年学期末時点での身長
+
+```{r}
+ggplot(df, aes(time, hight)) +
+  geom_point() +
+  stat_smooth(method = lm, se = FALSE)
+```
+
+# 5. 回帰分析
+```{r}
+model_1 <- lm(hight ~ time, data = df)
+summary(model_1)
+```
+
+## Hight = 140.75 + 1.18time
+→１週間あたりにゲーム1時間費やすと，身長が1.18cm高い
+p値 が < 0.05　であるので統計的に有意
+Intercept = 切片
+time = 時間（説明変数）
+Hight =　被説明変数
+
+# 6. 性別ごとの散布図
+
+```{r}
+ggplot(data = df, aes(time, hight)) + 
+  geom_point(aes(color = sex))
+```
+
+### 交絡変数のsexをモデルに加える→重回帰分析
+```{r}
+model_02 <- lm(hight ~ time + sex, data = df)
+summary(model_02)
+```
+## Hight = 149.2268 + 0.1007time + 10.228sexmale
+time の p値0.708>0.05 統計的に有意ではない
+
+```{r}
+ggplot(df, aes(time, hight)) +
+  geom_point(aes(color = sex)) +
+  geom_smooth(method = lm, se = FALSE, aes(color = sex))
+```
+
+sex = 1 男性の場合
+
+## Hight = 159 + 0.1time 
+
+sex = 0 女性の場合
+
+## Hight = 149 + 0.1time 
+
+

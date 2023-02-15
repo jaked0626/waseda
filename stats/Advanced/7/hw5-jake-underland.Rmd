@@ -1,0 +1,156 @@
+---
+title: "Homework Assignment 05"
+subtitle: "Numerical Statistics Fall, 2022"
+author: Jake Underland - 1A193008
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    toc: false
+    extra_dependencies: ["amsmath", "xcolor", "bm"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+  header-includes:
+    - \DeclareMathOperator*{\argmin}{arg\!min}
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, echo = FALSE}
+library(reticulate)
+```
+
+
+# 1.  
+Let $X_{1}, X_{2}, \ldots, X_{n}$ be independent random variables distributed according to the Bernoulli distribution with an unknown parameter $p(0<p<1)$, i.e., suppose that $X_{i}$ 's are independent, $P\left(X_{i}=1\right)=p$ and $P\left(X_{i}=0\right)=1-p$ $(i=1,2, \ldots, n)$. Then the $95 \%$ confidence interval for $p$ is
+$$
+\frac{\bar{X}_{n}+\frac{(1.96)^{2}}{2 n} \pm(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}}{1+\frac{(1.96)^{2}}{n}} \quad \cdots \quad\left(C I_{1}\right)
+$$
+derived from the quadratic equation
+$$
+\left\{n+(1.96)^{2}\right\} p^{2}-\left\{2 n \bar{X}_{n}+(1.96)^{2}\right\} p+n\left(\bar{X}_{n}\right)^{2}=0 \quad \cdots\left(Q E_{1}\right)
+$$
+Denote the upper and lower limits of the $95 \%$ confidence interval $\left(C I_{1}\right)$ by $\beta$ and $\alpha(\alpha \leq \beta)$, respectively. That is, let $\beta$ and $\alpha$ be
+$$
+\frac{\bar{X}_{n}+\frac{(1.96)^{2}}{2 n} \pm(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}}{1+\frac{(1.96)^{2}}{n}} \text {, respectively. }
+$$
+Since the parameter $p$ is assumed to lie between 0 and 1 , we might expect both $\beta$ and $\alpha$ to meet the condition $0<\alpha \leq \beta<1$.
+\begin{itemize}
+%\item[(1-1)] Show that $\beta$ and $\alpha$ are nonnegative. Then find a necessary and sufficient condition for $\alpha>0$.
+\item[(1-2)] Find a necessary and sufficient condition for $\beta<1$.
+\end{itemize}
+
+\textbf{Solutions.}
+\begin{itemize}
+\iffalse
+\item[(1-1)] 
+$\left[\begin{array}{l}\text { Recall that relation between roots and coefficients of a quadratic equation } \\ a x^{2}+b x+c=a(x-\alpha)(x-\beta)=0(a \neq 0) \text { : } \\ \qquad \alpha+\beta=-\frac{b}{a}, \quad \alpha \beta=\frac{c}{a}\end{array}\right]$
+\newline
+We see from $\left(Q E_{1}\right)$
+$$
+\left\{n+(1.96)^{2}\right\} p^{2}-\left\{2 n \bar{X}_{n}+(1.96)^{2}\right\} p+n\left(\bar{X}_{n}\right)^{2}=0
+$$
+that
+$$
+\alpha+\beta=\frac{2 n \bar{X}_{n}+(1.96)^{2}}{n+(1.96)^{2}}>0\left[(\because) 0 \leq \bar{X}_{n} \leq 1 \text { and }(1.96)^{2}>0\right]
+$$
+and
+$$
+\alpha \beta=\frac{n\left(\bar{X}_{n}\right)^{2}}{n+(1.96)^{2}} \geq 0, \quad\left[(\because) 0 \leq \bar{X}_{n} \leq 1\right]
+$$
+resulting in $\alpha \geq 0$ and $\beta>0$. Since $\alpha \beta>0$ holds if and only if $\bar{X}_{n}>0$ (or, equivalently, $\left.\bar{X}_{n} \neq 0\right)$, the required condition is $\bar{X}_{n}>0\left(\right.$ or $\left.\bar{X}_{n} \neq 0\right)$.
+\fi
+\item[(1-2)] 
+The necessary and sufficient condition for $\beta<1$ is equivalent to that of $1-\beta > 0$. We show the latter. 
+$$
+\begin{aligned}
+1 - \beta &= 1 - \frac{\bar{X}_{n}+\frac{(1.96)^{2}}{2 n} +(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}}{1+\frac{(1.96)^{2}}{n}}\\
+&= \frac{1 + \frac{(1.96)^2}{n} - \bar{X}_{n}-\frac{(1.96)^{2}}{2 n} -(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}}{1+\frac{(1.96)^{2}}{n}} \\
+&= \frac{1 + \frac{(1.96)^2}{2n} - \bar{X}_{n} -(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}}{1+\frac{(1.96)^{2}}{n}}
+\end{aligned}
+$$
+Since $n > 0$, $1+\frac{(1.96)^{2}}{n} > 0$. So, to find the necessary and sufficient condition such that the above is positive, it suffices to show the condition for 
+\begin{align}
+&1 + \frac{(1.96)^2}{2n} - \bar{X}_{n} -(1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}} > 0 \\
+\iff& 1 + \frac{(1.96)^2}{2n} - \bar{X}_{n} > (1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}
+\end{align}
+
+Because $0 \le \bar{X}_n \le 1$, Both LHS and RHS of (2) are positive. From here it follows that (2) is satisfied if and only if the LHS squared is greater than the RHS squared.  
+
+\begin{align}
+\iff& \left(1- \bar{X}_{n} + \frac{(1.96)^2}{2n}\right)^2 > \left((1.96) \sqrt{\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}}\right)^2 \\
+\iff& (1-\bar{X}_n)^2 + \frac{(1.96)^2(1-\bar{X}_n)}{n} + \frac{(1.96)^{4}}{4 n^{2}} > (1.96)^2 \left(\frac{\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{2}}{4 n^{2}}\right) \\
+\iff& (1-\bar{X}_n)^2 + \frac{(1.96)^2(1-\bar{X}_n)}{n}+ \frac{(1.96)^{4}}{4 n^{2}} > \frac{(1.96)^2\bar{X}_{n}\left(1-\bar{X}_{n}\right)}{n}+\frac{(1.96)^{4}}{4 n^{2}} \\
+\iff& (1-\bar{X}_n)^2 + \frac{1}{n}(1.96)^2(1-\bar{X}_n)(1-\bar{X}_n) > 0 \\
+\iff& \underbrace{(1-\bar{X}_n)^2}_{\ge0} + \underbrace{\frac{1}{n}(1.96)^2(1-\bar{X}_n)^2}_{\ge0} > 0
+\end{align}
+
+Recall that $0 \le \bar{X}_n \le 1$. For the inequality in (7) to be strict, it must be that $\bar{X}_n\ne1$. Thus, the necessary and sufficient condition for the above to be strictly positive is 
+ $$\bar{X}_n< 1$$
+ \hfill $\Box$
+\end{itemize}
+
+# 2.  
+\begin{itemize}
+\item[(2)] Let $X_{1}$ and $X_{2}$ be independent random variables with $E\left(X_{1}\right)=3 \mu$ and $E\left(X_{2}\right)=-4 \mu$, where the parameter $\mu$ is unknown. In addition, let $Var\left(X_{1}\right)=2$ and $Var\left(X_{2}\right)=5$. Then answer the questions below.
+\begin{itemize}
+\item[(2-1)] Find a condition on $w_{1}$ and $w_{2}$ such that $\widehat{\mu}_{w}=w_{1} X_{1}+w_{2} X_{2}$ is an unbiased estimator of $\mu$. (2 points)
+\item[(2-2)] Find the set of numbers $\left(w_{1}, w_{2}\right)$ that gives the minimum value of $Var\left(\widehat{\mu}_{w}\right)$ provided $\widehat{\mu}_{w}$ is an unbiased estimator of $\mu$.
+\end{itemize}
+\end{itemize}
+**Solutions**.  
+\begin{itemize}
+\item[(2-1)]
+For $\widehat{\mu}_{w}=w_{1} X_{1}+w_{2} X_{2}$ to be an unbiased estimator of $\mu$, we must have $E(w_{1} X_{1}+w_{2} X_{2}) = \mu$. 
+$$\begin{aligned}
+E(w_{1} X_{1}+w_{2} X_{2}) &= E(w_{1} X_{1}) + E(w_{2} X_{2}) \\
+&= w_1 E(X_1) + w_2 E(X_2) \\
+&= w_1 (3\mu)  + w_2 (-4\mu) \\
+&= (3w_1 - 4 w_2) \mu = \mu \\
+\iff &\mu = 0 \text { or } 3w_1 - 4w_2 = 1
+\end{aligned}$$
+Thus, the condition for $w_1, w_2$ is $3w_1 - 4w_2 = 1 \dots \Box$
+
+\item[(2-2)] We can state the problem as 
+$$\argmin_{w_1,w_2} Var(\widehat{\mu}_w)\;\; \text{ s.t. }\;\; E(\widehat{\mu}_w) = \mu$$
+As we have seen from (2-1), the constraint evaluates to $3w_1 - 4w_2 = 1$. 
+The objective function can be simplified thus: 
+$$\begin{aligned}
+Var(\widehat{\mu}_w) &= Var(w_1X_1 + w_2X_2) \\
+\end{aligned}$$
+Since $X_1 \perp\!\!\!\perp X_2$, $Cov(X_1, X_2) = 0$ and thus, 
+$$\begin{aligned}
+Var(w_1X_1 + w_2X_2) &= Var(w_1X_1) + Var(w_2X_2) \\
+&= w_1 ^2 Var(X_1) + w_2 ^2 Var(X_2) \\
+&= 2w_1^2 + 5w_2^2
+\end{aligned}$$
+We want to minimize this subject to the constraint $3w_1 - 4w_2 = 1$. The Lagrangian of the problem can be formulated as thus:
+$$\min_{w_1,w_2,\lambda}\mathcal{L} = 2w_1^2 + 5w_2^2 + \lambda(1-3w_1 + 4w_2)$$
+FOCS:
+\begin{align}
+\left[w_1\right]:&\;\; 4w_1 - 3\lambda = 0 \\
+\left[w_2\right]:&\;\; 10w_2 + 4 \lambda = 0  \\
+\left[\lambda\right]:&\;\; 1-3w_1 + 4w_2 = 0
+\end{align}
+From (1) and (2), $w_1 = -\frac{15}{8}w_2$. Plugging this into (3), we get 
+$$\begin{aligned}1 + \frac{45}{8}w_2 + 4w_2 &= 0 \\
+ \iff\frac{77}{8}w_2 &= -1 \\
+ \iff w_2 &= -\frac{8}{77} \\
+ w_1 &= -\frac{15}{8}\cdot \left(-\frac{8}{77}\right) = \frac{15}{77} \\
+\end{aligned}$$
+Since the objective function is convex, this gives us the global minimum. Hence, 
+$$\begin{cases}
+w_1 &=\frac{15}{77} \\
+w_2 &= -\frac{8}{77}
+\end{cases} \dots \Box$$
+
+\end{itemize}

@@ -1,0 +1,418 @@
+---
+title: 時系列分析 第 8 回 分析例
+subtitle: VAR (MSCI)
+author: Kenichiro Tamaki
+date: 2022 年 5 月 30 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning=FALSE)
+```
+
+<p><br></p>
+
+# パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(readxl) # xls ファイルの読込
+library(quantmod) # 時系列データに変換
+library(vars) # VAR
+```
+
+# 関数の作成
+
+自作関数は次である.
+
+**VAR の残差に対するかばん検定**
+
+```{r}
+port.v <- function(x, lag) { # x = 推定結果, lag = ラグ
+  res <- serial.test(x, lags.pt = lag, type = "PT.adjusted") # かばん検定
+  res <- c(lag, res$serial$statistic, res$serial$parameter, res$serial$p.value) # ラグ, 検定統計量, 自由度, p 値
+
+  return(res)
+}
+```
+
+# データの概要
+
+## データの入手と編集
+
+MSCI が提供している株式指数を用いる.
+
+- https://www.msci.com/
+
+上記の「Solutions」→「Indexes」→「PERFORMANCE
+」→「End of Day Index Data Search」から, 様々なデータ (xls ファイル) をダウンロードできる. 
+
+ここでは, 次のデータを用いる.
+
+- 2012年1月から2015年12月までの4年間の日次株式指数
+
+- 日本, イギリス, アメリカの3カ国
+
+ファイル名をそれぞれ「JP.xls」,「UK.xls」, 「US.xls」とする. 必要ない箇所を削除し, さらに, 文字列形式であるから Excel か R で変換する必要がある. ファイルは, 1列目は日付, 2列目は数値に変換済とする.
+
+RStudio の右上にある「Environment」→「Import Dateset」→「From Excel..」において, xls ファイルの読込が出来る. または, 次を実行する.
+
+```{r}
+JP <- read_excel("JP.xls") # 日本
+UK <- read_excel("UK.xls") # イギリス
+US <- read_excel("US.xls") # アメリカ
+```
+
+時系列に変換する.
+
+```{r}
+JP <- as.xts(read.zoo(JP)) # 日本
+UK <- as.xts(read.zoo(UK)) # イギリス
+US <- as.xts(read.zoo(US)) # アメリカ
+```
+
+標本数は次である.
+
+```{r}
+(T <- length(JP)) # 標本数
+```
+
+日付情報が同じであるか確認する.
+
+```{r}
+sum(index(JP) != index(UK)) # 日本とイギリスの日付情報が異なる数
+sum(index(JP) != index(US)) # 日本とアメリカの日付情報が異なる数
+```
+
+欠損値の有無を確認する.
+
+```{r}
+MSCI <- cbind(JP, UK, US) # データを結合
+sum(is.na(MSCI)) # 欠損値の数
+```
+
+データの中身を確認する.
+
+```{r}
+head(MSCI, 5) # 最初の 5 個を表示
+tail(MSCI, 5) # 最後の 5 個を表示
+```
+
+## 時系列プロット, 記述統計量, コレログラム
+
+**株式指数**
+
+```{r}
+plot(MSCI) # 時系列プロット
+summary(coredata(MSCI)) # 記述統計量
+cov(coredata(MSCI)) # 共分散行列
+cor(coredata(MSCI)) # 相関行列
+```
+
+```{r fig.height = 6}
+acf(coredata(MSCI)) # コレログラム
+```
+
+**対数収益率**
+
+対数収益率 (%) に変換する.
+
+```{r}
+JP.r <- dailyReturn(MSCI$JP, type = 'log') * 100 # 日本
+UK.r <- dailyReturn(MSCI$UK, type = 'log') * 100 # イギリス
+US.r <- dailyReturn(MSCI$US, type = 'log') * 100 # アメリカ
+MSCI.r <- cbind(JP.r, UK.r, US.r) # データを結合
+names(MSCI.r) <- names(MSCI) # 名称を変更
+```
+
+```{r}
+plot(MSCI.r) # 時系列プロット
+summary(coredata(MSCI.r)) # 記述統計量
+cov(coredata(MSCI.r)) # 共分散行列
+cor(coredata(MSCI.r)) # 相関行列
+```
+
+```{r fig.height = 6}
+acf(coredata(MSCI.r)) # コレログラム
+```
+
+# 推定
+
+パッケージ vars を用いて分析を行う.
+
+## 次数の決定
+
+情報量基準を用いて, VAR モデルの次数を決定する.
+
+```{r}
+(IC <- VARselect(MSCI.r)) # 情報量基準
+```
+
+AIC では VAR(`r IC$selection[1]`), BIC では VAR(`r IC$selection[3]`) が選択される.
+
+## パラメータの推定
+
+AIC と BIC で結果が異なるので, 両方用いて推定を行う.
+
+```{r}
+M1 <- VAR(MSCI.r, lag.max = 10, ic = "AIC") # AIC によるモデルの推定
+M2 <- VAR(MSCI.r, lag.max = 10, ic = "SC") # BIC によるモデルの推定
+```
+
+AIC により推定される VAR(`r IC$selection[1]`) を Model 1, BIC により推定される VAR(`r IC$selection[3]`) を Model 2 とする.
+
+推定結果を表示する. Model 1 の結果は量が多いので, Model 2 の結果を表示する.
+
+```{r}
+summary(M2) # Model 2 の推定結果を表示
+```
+
+**Model 2**
+
+$$
+\begin{align}
+\begin{pmatrix}
+\text{JP}_{t} \\
+\text{UK}_{t} \\
+\text{US}_{t}
+\end{pmatrix}
+=
+\begin{pmatrix}
+`r signif(M2$varresult$JP$coefficients[4], 3)` \\
+`r signif(M2$varresult$UK$coefficients[4], 3)` \\
+`r signif(M2$varresult$US$coefficients[4], 3)`
+\end{pmatrix}
++
+\begin{pmatrix}
+`r signif(M2$varresult$JP$coefficients[1], 3)` & `r signif(M2$varresult$JP$coefficients[2], 3)` & `r signif(M2$varresult$JP$coefficients[3], 3)` \\
+`r signif(M2$varresult$UK$coefficients[1], 3)` & `r signif(M2$varresult$UK$coefficients[2], 3)` & `r signif(M2$varresult$UK$coefficients[3], 3)` \\
+`r signif(M2$varresult$US$coefficients[1], 3)` & `r signif(M2$varresult$US$coefficients[2], 3)` & `r signif(M2$varresult$US$coefficients[3], 3)`
+\end{pmatrix}
+\begin{pmatrix}
+\text{JP}_{t - 1} \\
+\text{UK}_{t - 1} \\
+\text{US}_{t - 1}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\varepsilon_{2, t} \\
+\varepsilon_{3, t}
+\end{pmatrix}
+\end{align}
+$$
+
+**Model 1**
+
+$$
+\begin{align}
+\begin{pmatrix}
+\text{JP}_{t} \\
+\text{UK}_{t} \\
+\text{US}_{t}
+\end{pmatrix}
+&=
+\begin{pmatrix}
+`r signif(M1$varresult$JP$coefficients[7], 3)` \\
+`r signif(M1$varresult$UK$coefficients[7], 3)` \\
+`r signif(M1$varresult$US$coefficients[7], 3)`
+\end{pmatrix}
++
+\begin{pmatrix}
+`r signif(M1$varresult$JP$coefficients[1], 3)` & `r signif(M1$varresult$JP$coefficients[2], 3)` & `r signif(M1$varresult$JP$coefficients[3], 3)` \\
+`r signif(M1$varresult$UK$coefficients[1], 3)` & `r signif(M1$varresult$UK$coefficients[2], 3)` & `r signif(M1$varresult$UK$coefficients[3], 3)` \\
+`r signif(M1$varresult$US$coefficients[1], 3)` & `r signif(M1$varresult$US$coefficients[2], 3)` & `r signif(M1$varresult$US$coefficients[3], 3)`
+\end{pmatrix}
+\begin{pmatrix}
+\text{JP}_{t - 1} \\
+\text{UK}_{t - 1} \\
+\text{US}_{t - 1}
+\end{pmatrix} \\
+& \hspace{8em} +
+\begin{pmatrix}
+`r signif(M1$varresult$JP$coefficients[4], 3)` & `r signif(M1$varresult$JP$coefficients[5], 3)` & `r signif(M1$varresult$JP$coefficients[6], 3)` \\
+`r signif(M1$varresult$UK$coefficients[4], 3)` & `r signif(M1$varresult$UK$coefficients[5], 3)` & `r signif(M1$varresult$UK$coefficients[6], 3)` \\
+`r signif(M1$varresult$US$coefficients[4], 3)` & `r signif(M1$varresult$US$coefficients[5], 3)` & `r signif(M1$varresult$US$coefficients[6], 3)`
+\end{pmatrix}
+\begin{pmatrix}
+\text{JP}_{t - 2} \\
+\text{UK}_{t - 2} \\
+\text{US}_{t - 2}
+\end{pmatrix}
++
+\begin{pmatrix}
+\varepsilon_{1, t} \\
+\varepsilon_{2, t} \\
+\varepsilon_{3, t}
+\end{pmatrix}
+\end{align}
+$$
+
+## モデル診断
+
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. まず, コレログラムをプロットする.
+
+```{r fig.height = 6}
+acf(residuals(M1)) # Model 1 の残差のコレログラム
+acf(residuals(M2)) # Model 2 の残差のコレログラム
+```
+
+次に, かばん検定を行う. 
+
+```{r}
+m <- 10 # 最大ラグ
+lag <- 1:m + IC$selection[1] # ラグ (1, ..., m) + p
+res.port1 <- sapply(lag, port.v, x = M1) # x に対して各 lag の port.v を計算
+
+digits <- c(0, 2, 0, 4) # 少数点以下の最大表示桁数
+col.names <- c("$m$", "$Q(m)$", "自由度", "$p$ 値") # 列名
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "Model 1 の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, Model 1 は妥当である．
+
+```{r}
+m <- 10 # 最大ラグ
+lag <- 1:m + IC$selection[3] # ラグ (1, ..., m) + p
+res.port2 <- sapply(lag, port.v, x = M2) # x に対して各 lag の port.v を計算
+
+# 表を作成
+knitr::kable(t(res.port2), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "Model 2 の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却する．つまり, 残差に自己相関があると判断できるので, Model 2 は適切でない．
+
+# 分析
+
+モデル診断の結果より, Model 1 を用いて分析を行う.
+
+## グレンジャー因果性
+
+グレンジャー因果性の検定を行う.
+
+```{r}
+causality(M1, cause = "JP") # JP → UK, US
+```
+
+これは, 1つの変数の他の全ての変数に対する検定であり, 他の1つの変数に対する検定ではない. 関数 causality では, 他の1つの変数に対する検定を行うには $2$ 変量 VAR モデルを用いなければならない.
+
+### 日本とイギリス
+
+```{r}
+JPUK <- cbind(MSCI.r$JP, MSCI.r$UK) # 日本とイギリスの標本
+M1.jpuk <- VAR(JPUK, lag.max = 10, ic = "AIC") # AIC によるモデルの推定
+M1.jpuk$p # VAR 次数
+serial.test(M1.jpuk, lags.pt = M1.jpuk$p + 1, type = "PT.adjusted") # かばん検定
+```
+
+かばん検定の $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, モデルは妥当である.
+
+```{r}
+causality(M1.jpuk, cause = "JP") # JP → UK
+```
+
+$p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない．つまり, 日本からイギリスへのグレンジャー因果性は存在すると判断できない．
+
+```{r}
+causality(M1.jpuk, cause = "UK") # UK → JP
+```
+
+$p$ 値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる．つまり, イギリスから日本へのグレンジャー因果性は存在すると判断できる．
+
+### 日本とアメリカ
+
+```{r}
+JPUS <- cbind(MSCI.r$JP, MSCI.r$US) # 日本とアメリカの標本
+M1.jpus <- VAR(JPUS, lag.max =10, ic = "AIC") # AIC によるモデルの推定
+M1.jpus$p # VAR 次数
+serial.test(M1.jpus, lags.pt = M1.jpus$p + 1, type = "PT.adjusted") # かばん検定
+```
+
+かばん検定の $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, モデルは妥当である.
+
+```{r}
+causality(M1.jpus, cause = "JP") # JP → US
+```
+
+$p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない．つまり, 日本からアメリカへのグレンジャー因果性は存在すると判断できない．
+
+```{r}
+causality(M1.jpus, cause = "US") # US → JP
+```
+
+$p$ 値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる．つまり, アメリカから日本へのグレンジャー因果性は存在すると判断できる．
+
+### イギリスとアメリカ
+
+```{r}
+UKUS <- cbind(MSCI.r$UK, MSCI.r$US) # イギリスとアメリカの標本
+M1.ukus <- VAR(UKUS, lag.max =10, ic = "AIC") # AIC によるモデルの推定
+M1.ukus$p # VAR 次数
+serial.test(M1.ukus, lags.pt = M1.ukus$p + 1, type = "PT.adjusted") # かばん検定
+```
+
+かばん検定の $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, モデルは妥当である.
+
+```{r}
+causality(M1.ukus, cause = "UK") # UK → US
+```
+
+$p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない．つまり, イギリスからアメリカへのグレンジャー因果性は存在すると判断できない．
+
+```{r}
+causality(M1.ukus, cause = "US") # US → UK
+```
+
+$p$ 値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる．つまり, アメリカからイギリスへのグレンジャー因果性は存在すると判断できる
+
+## インパルス応答関数
+
+$1$ 標準偏差のショックを与えたときの直交化 IRF を計算しプロットする. 
+
+```{r}
+M1.irf <- irf(M1) # IRF
+plot(M1.irf) # IRF をプロット
+M1.irf$irf # IRF を表示
+```
+
+上記より, 日本市場における予想外の $`r signif(M1.irf$irf$JP[1,1], 3)` \%$ の変動は, 1日後の日本市場に $`r signif(M1.irf$irf$JP[2,1], 3)` \%$, 同日のイギリス市場に $`r signif(M1.irf$irf$JP[1,2], 3)` \%$, 同日のアメリカ市場に $`r signif(M1.irf$irf$JP[1,3], 3)` \%$ の影響を与える.
+
+イギリス市場における予想外の $`r signif(M1.irf$irf$UK[1,2], 3)` \%$ の変動は, 1日後の日本市場に $`r signif(M1.irf$irf$UK[2,1], 3)` \%$, 同日のアメリカ場に $`r signif(M1.irf$irf$UK[1,3], 3)` \%$ の影響を与える.
+
+アメリカ市場における予想外の $`r signif(M1.irf$irf$US[1,3], 3)` \%$ 変動, 1日後の日本市場に $`r signif(M1.irf$irf$US[2,1], 3)` \%$, 1日後のイギリス市場に $`r signif(M1.irf$irf$US[2,2], 3)` \%$ の影響を与える.
+
+全ての場合において, 2日後以降は大きな影響はない.
+
+## 分散分解
+
+RVC を計算しプロットする.
+
+```{r fig.height = 9}
+M1.rvc <- fevd(M1) # RVC, forecast error variance decomposition
+plot(M1.rvc) # RVC をプロット
+M1.rvc # RVC を表示
+```
+
+上記より, 長期的には, 日本市場の予測できない変動は, 日本市場が $`r signif(100 * M1.rvc$JP[10,1], 3)` \%$, イギリス市場が $`r signif(100 * M1.rvc$JP[10,2], 3)` \%$, アメリカ市場が $`r signif(100 * M1.rvc$JP[10,3], 3)` \%$ の説明力を持つ.
+
+イギリス市場の予測できない変動は, 日本市場が $`r signif(100 * M1.rvc$UK[10,1], 3)` \%$, イギリス市場が $`r signif(100 * M1.rvc$UK[10,2], 3)` \%$, アメリカ市場が $`r signif(100 * M1.rvc$UK[10,3], 3)` \%$ の説明力を持つ. 
+
+アメリカ市場の予測できない変動は, 日本市場が $`r signif(100 * M1.rvc$US[10,1], 3)` \%$, イギリス市場が $`r signif(100 * M1.rvc$US[10,2], 3)` \%$, アメリカ市場が $`r signif(100 * M1.rvc$US[10,3], 3)` \%$ の説明力を持つ.

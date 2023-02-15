@@ -1,0 +1,356 @@
+---
+title: "交差項"
+author: "Jake Underland"
+date: "7/14/2020"
+output: html_document
+---
+```{r}
+download.file(url = "https://git.io/fACk6",
+              destfile = "data/hr96-17.Rds")
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(stargazer)
+library(margins)
+library(ggeffects)
+library(interplot)
+library(msm)
+library(patchwork)
+library(jtools)
+```
+```{r, include=FALSE}
+theme_set(theme_bw(base_size = 10,
+                     base_family = "HiraginoSans-W3"))
+#To make ggplot compatible with Japanese
+```
+# 1. Differences Between Interaction terms and Dummy Variables 
+
+Dummy- Linear model moves parallel in accordance to dummy variable but slope is constant 
+Interaction term- Changes slope. 
+
+```{r, include=FALSE}
+df <- read_rds("data/hr96-17.Rds")
+```
+```{r}
+names(df)
+```
+```{r, include=FALSE}
+df1 <- df %>% 
+  mutate(ldp = as.numeric(party =="LDP"))
+```
+
+```{r, include=FALSE}
+df1 <- df1 %>%　
+  dplyr::filter(year == 2005) %>%　  　# 2005年のデータだけを選ぶ
+  dplyr::select(ku, kun, name, age, rank, voteshare, eligible, exppv, nocand, ldp) # 10の変数だけを選ぶ
+```
+```{r}
+df1
+```
+```{r, echo=FALSE}
+names(df1)
+```
+
+```{r, echo=FALSE}
+head(df1)
+```
+```{r, results="asis"}
+stargazer(as.data.frame(df1), 
+          type = "text")
+```
+
+# 2. Adding Interaction Term
+
+**通常、交差項はldpのようなカテゴリカル変数とexppvのような連続変数を掛け合わせて作る**
+
+ここでは次の 3 つの変数を使って重回帰分析を行う
+・応答変数・・・voteshare（得票率：%）
+・説明変数・・・exppv（有権者一人あたりに候補者が費やした選挙費用:円）
+・交差項・・・ldp:exppv (ldp = 調整変数)
+
+（モデル内でexppv*ldpと入力するとexppv:ldpという交差項名が自動的に付されexppv, ldpという二つの変数も含まれる）
+
+
+```{r}
+model_1 <- lm(voteshare ~ exppv*ldp,
+              data = df1)
+summary(model_1)
+```
+```{r, results="asis"}
+stargazer(model_1, type = "text", single.row=TRUE,
+          ci = TRUE) # print 95% CIs
+```
+#Model 1 の分析結果
+交差項 (ldp:exppv) が統計的に有意 (係数: -0.74623, t 値: -15.68、p 値: 2e-16)
+→「選挙費用が得票率に与える影響は、候補者が自民党候補か否かによって異なる」 
+・選挙費用 (exppv) の係数が統計的に有意 (係数: 0.79142, t 値: 30.21、p 値: 2e-16)
+—　これは自民党ダミー（ldp） が 0 の時（つまり非自民党候補者）の結果
+— しかし、候補者は自民党候補者 (ldp = 1) もいる
+=> 調整変数である自民党ダミー (ldp）が 0 と 1 それぞれの値をとる場合に選挙費用が得票率に与える影響力を確認する必要あり
+
+jtoolsパッケージを使うと、統計的有意性を視覚的に確認できる
+
+```{r}
+jtools::plot_summs(model_1)
+```
+*installation of ggstance package necessary* 
+
+```{r}
+F1 <- ggplot(df1, aes(x = exppv, y = voteshare, color = as.factor(ldp))) +
+  geom_point(pch = 16) +
+  geom_abline(intercept = 7.52, slope = 0.791, color = "tomato") +
+  geom_abline(intercept = 47.7, slope = 0.045, color = "blue") +
+  ylim(0, 80) +
+  annotate("label", 
+           label = "得票率 = 7.57 + 0.791・選挙費用\n(非自民党候補者)", 
+           x = 35, y = 0,
+           size = 3, 
+           colour = "tomato", 
+           family = "HiraginoSans-W3") +
+  annotate("label",
+           label = "得票率 = 47.7 + 0.045・選挙費用\n(自民党候補者)", 
+           x = 15, y = 80,
+           size = 3, 
+           colour = "blue", 
+           family = "HiraginoSans-W3") +
+  scale_color_discrete(name = "候補者の所属政党", labels = c("非自民党","自民党"))
+```
+```{r}
+F1
+```
+
+# 3. Using msm to test for statistical significance of interaction term
+
+
+model_1 で得られた切片 (Intercept) と 3 つの変数の偏回帰係数とを表示する
+```{r}
+model_1$coef
+```
+
+moderator 変数 (ldp) の 最小値 (0) と最大値 (1) それぞれの値における限界効果 (slope)を表示
+・限界効果を計算するに必要な係数は 2 番目の  exppv と 4 番目の exppv:eligible の 2 つ
+
+```{r}
+at.ldp <- c(0, 1) # mini (0) - max (1) まで 1 間隔で区切る
+slopes <- model_1$coef[2] + model_1$coef[4]*at.ldp　
+                    # exppv の傾きの限界効果 (slopes) を計算する  
+                    # [2] は二つ目の係数、[4] は四つ目の係数という意味
+slopes　            # 結果を表示する  
+```
+delta method を使ってこれらの 2 つの限界効果 (= slopes) と標準誤差 (standard error)を推定
+
+eligible の規模ごとに得られた 2 つの限界効果 (sloples) とその標準誤差を計算し、図で表す
+・95% 信頼区間 (upper, lower) を表示
+
+```{r}
+estmean <- coef(model_1)
+var <- vcov(model_1)
+
+SEs <- rep(NA, length(at.ldp))
+
+for (i in 1:length(at.ldp)){
+    j <- at.ldp[i]
+    SEs[i] <- deltamethod (~ (x2) + (x4)*j, estmean, var)　# slopes の 標準誤差
+}                                                      
+
+upper <- slopes + 1.96*SEs
+lower <- slopes - 1.96*SEs
+
+cbind(at.ldp, slopes, upper, lower) 
+```
+
+・at.ldp は非自民党候補者が 0, 自民党候補者が 1 を表す
+・slopes は 2 種類の候補者それぞれの場合において、exppv が voteshare に及ぼす限界効果の大きさ（＝傾き）
+・[1, ] と slopes に囲まれた値 (0.79142440) 
+→　非自民党候補者の場合、説明変数 (exppv) が応答変数 (voteshare) に与える限界効果（回帰線の傾き）
+・[2, ] と slopes に囲まれた値 (0.04519911)
+→　自民党候補者の場合、説明変数 (exppv) が応答変数 (voteshare) に与える限界効果（回帰線の傾き）
+・upper と lower は95% 信頼区間
+
+・グラフを描くために上の行列をデータフレームに変換し msm_1 という名前を付ける
+
+```{r}
+msm_1 <- cbind(at.ldp, slopes, upper, lower) %>% 
+  as.data.frame()
+
+msm_1
+```
+
+```{r}
+msm_1 <- msm_1 %>% 
+  ggplot(aes(at.ldp, slopes, ymin = lower, ymax = upper)) +
+  geom_hline(yintercept = 0, linetype = 2, col = "red") +
+  geom_pointrange(size = 1) +
+  geom_errorbar(aes(x = at.ldp, ymin = lower, ymax = upper),
+                width = 0.1) +
+  labs(x = "候補者の所属政党", y = "選挙費用が得票率に与える影響 (限界効果 ME)") +
+  scale_x_continuous(breaks = c(1,0),
+                     labels = c("自民党", "非自民党")) +
+  ggtitle("Model 1の限界効果") +
+  theme(axis.text.x  = element_text(size = 14),
+        axis.text.y  = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        plot.title   = element_text(size = 18))
+
+msm_1
+```
+
+# 4. Using Interplot
+```{r}
+interplot_1 <- interplot(m = model_1, 
+                   var1 = "exppv", # 主要な説明変数
+                   var2 = "ldp") + # 調整変数
+  labs(x = "候補者の所属政党 (ldp)", 
+       y = "選挙費用が得票率に与える影響（限界効果 ME)")
+
+print(interplot_1)
+```
+
+
+# 5. Using margins
+
+```{r}
+margins_1 <- summary(margins(model_1, 
+                               at = list(ldp = 0:1))) %>% 
+  dplyr::filter(factor == "exppv") %>% 
+  as.data.frame()
+```
+```{r}
+margins_1
+```
+
+```{r}
+#日本語を表示させるため、マックユーザーは以下の二行を入力  
+ggplot(margins_1, aes(ldp, AME, ymin = lower, ymax = upper)) +
+  geom_hline(yintercept = 0, linetype = 2, col = "red") +
+  geom_pointrange(size = 1) +
+  geom_errorbar(aes(x = ldp, ymin = lower, ymax = upper),
+                width = 0.1) +
+  labs(x = "候補者の所属政党", y = "選挙費用が得票率に与える影響 (限界効果 AME)") +
+  scale_x_continuous(breaks = c(1,0),
+                     labels = c("自民党", "非自民党")) +
+  theme(axis.text.x  = element_text(size = 14),
+        axis.text.y  = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        plot.title   = element_text(size = 18))
+```
+
+# 6. Multiple Regression with Controlled Variable
+
+**通常、交差項はldpのようなカテゴリカル変数とexppvのような連続変数を掛け合わせて作る** 
+
+・ここでは次の 3 つの変数 (voteshare, ldp, ldp:exppv) を使って重回帰分析を行う
+・応答変数・・・voteshare
+・説明変数・・・exppv
+・交差項・・・ldp:exppv (ldp = 調整変数)
+・統制変数・・・nocand -> number of candidates
+
+```{r}
+model_2 <- lm(voteshare ~ exppv*ldp + nocand,
+              data = df1)
+summary(model_2)
+```
+
+・交差項 (ldp:exppv) が統計的に有意 (係数: -0.74931, t 値: -16.52、p 値: 2e-16)
+→「選挙費用が得票率に与える影響は、候補者が自民党候補か否かによって異なる」 
+・選挙費用 (exppv) の係数が統計的に有意 (係数: 0.77014, t 値: 30.75、p 値: 2e-16)
+—　これは自民党ダミー（ldp） が 0 の時（つまり非自民党候補者）の結果
+— しかし、候補者は自民党候補者 (ldp = 1) もいる
+=> 調整変数である自民党ダミー (ldp）が 0 と 1 それぞれの値をとる場合に選挙費用が得票率に与える影響力を確認する必要あり
+
+```{r}
+F2 <- ggplot(df1, aes(x = exppv, y = voteshare)) +
+  geom_point(pch = 16) +
+  geom_abline(intercept = 23.46, slope = 0.77, linetype = "dashed", color = "red") +
+  geom_abline(intercept = 63.29, slope = 0.002, color = "blue") +
+  ylim(0, 100) +
+  labs(x = "選挙費用（有権者一人当たり：円）", y = "得票率 (%)") +
+  geom_text(label = "得票率 = 23.46 + 0.77・選挙費用- 4.47候補者数\n(非自民党候補者)",
+            x = 60, y = 95, family = "HiraginoSans-W3", color = "red") +
+  geom_text(label = "得票率 = 63.29 + 0.002・選挙費用 - 4.47候補者数\n(自民党候補者)",
+            x = 25, y = 80, family = "HiraginoSans-W3", color = "blue")
+F2
+```
+
+
+```{r}
+model_2$coef
+```
+
+```{r}
+at.ldp <- c(0, 1) # mini (0) - max (1) まで 1 間隔で区切る
+slopes <- model_2$coef[2] + model_2$coef[5]*at.ldp　
+                    # exppv の傾きの限界効果 (slopes) を計算する  
+                    # [2] は二つ目の係数、[5] は五つ目の係数という意味
+slopes　            # 結果を表示する  
+```
+```{r}
+estmean <- coef(model_2)
+var <- vcov(model_2)
+
+SEs <- rep(NA, length(at.ldp))
+
+for (i in 1:length(at.ldp)){
+    j <- at.ldp[i]
+    SEs[i] <- deltamethod (~ (x2) + (x5)*j, estmean, var)　# slopes の 標準誤差
+}                                                      
+
+upper <- slopes + 1.96*SEs
+lower <- slopes - 1.96*SEs
+
+cbind(at.ldp, slopes, upper, lower) 
+```
+
+
+```{r}
+msm_2 <- cbind(at.ldp, slopes, upper, lower) %>% 
+  as.data.frame()
+
+msm_2
+```
+
+```{r}
+msm_2 <- msm_2 %>% 
+  ggplot(aes(at.ldp, slopes, ymin = lower, ymax = upper)) +
+  geom_hline(yintercept = 0, linetype = 2, col = "red") +
+  geom_pointrange(size = 1) +
+  geom_errorbar(aes(x = at.ldp, ymin = lower, ymax = upper),
+                width = 0.1) +
+  labs(x = "候補者の所属政党", y = "選挙費用が得票率に与える影響 (限界効果 ME)") +
+  scale_x_continuous(breaks = c(1,0),
+                     labels = c("自民党", "非自民党")) +
+  ggtitle("Model 2の限界効果") +
+  theme(axis.text.x  = element_text(size = 14),
+        axis.text.y  = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        plot.title   = element_text(size = 18))
+
+msm_2
+```
+・Model 1 と Model 2 の限界効果結果を可視化すると
+
+```{r}
+msm_1 + msm_2 + plot_layout(ncol = 2)
+```
+
+・基本的にどちらのモデルも同じような結果を得ているが、どちらのモデルを使うべきか？
+→・赤池情報量規準 (AIC: Akaike’s Information Criterion) を使って統計モデルの良さを評価してみる
+
+```{r}
+AIC(model_1)
+```
+```{r}
+AIC(model_2)
+```
+
+・model 2 の方がAIC値が小さいので、モデルとしては Model 1 より Model_2 を選ぶのが好ましいといえる
+
+
+
+# MSM and other visualization methods are the same but MSM is easiest to use so use msm. 中心化(centralization) is not essential. Gist of this lesson is to learn how to create and add interaction terms and visualize the effect. 
+
+
+
+

@@ -1,0 +1,114 @@
+---
+title: "Research Paper Format R"
+author: "Jake Underland"
+date:  "`r Sys.Date()`"
+output:
+   html_document:
+     toc: true
+     toc_depth: 3
+     toc_float: true
+---
+</head>
+<body>
+<div id="header">
+</div>
+<div id="TOC">
+<style>
+table, td, th {
+  border: none;F
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+</style>
+<style type="text/css">
+body, td {
+   font-size: 14px;
+}
+</style>
+
+# 1. データを読みこむためのパッケージをロードする
+
+```{r}
+library("tidyverse")
+```
+
+# 2. csv ファイルデータを読み込む
+```{r}
+df <- read_csv("data/paradox.csv")
+```
+
+
+```{r}
+df
+```
+
+
+# 4. 散布図を描く
+**time**・・・中学２年生の時にゲームに費やした時間（一週間あたり）
+**hight**・・・中学２年学期末時点での身長
+```{r}
+ggplot(df, aes(time, hight)) +
+  geom_point() +
+  stat_smooth(method = lm, se = FALSE)
+```
+
+
+# 5. 回帰分析
+
+
+```{r}
+model_1 <- lm(hight ~ time, data = df)
+summary(model_1)
+```
+## Hight = 140.75 + 1.18time
+→　一週間あたりゲームに１時間費やすと、身長が 1.17cm 高い
+
+
+# 6. 性別ごとの散布図
+```{r}
+ggplot(df, aes(time, hight))  +
+  geom_point(aes(color = sex))
+```
+
+
+### 交絡変数の sex をモデルに加える→重回帰分析
+```{r}
+model_2 <- lm(hight ~ time + sex, data = df)
+summary(model_2)
+```
+<div style=“text-align: center;“>
+### <span class=“math display”>\[Hight = 149 + 0.1time + 10sex\]</span>
+</div>
+<span style=“color:blue”>
+**sex = 1 男性の場合**
+</span>
+<div style=“text-align: center;“>
+## <span style=“color:blue”>Hight = 159 + 0.1time</span>
+</div>
+<span style=“color:tomato”>
+**sex = 0 女性の場合**
+</span>
+<div style=“text-align: center;“>
+## <span style=“color:tomato”> Hight = 149 + 0.1time </span>
+</div>
+
+```{r}
+ggplot(df, aes(time, hight))  +
+  geom_point(aes(color = sex)) +
+  geom_smooth(method = lm, se = FALSE, aes(color = sex))
+```
+# 7. 結論
+### <span style=“color:green”>中学２年生の時にゲームに費やした時間と身長との間には**正の相関関係**があると思ったら、交絡変数である性別をモデルに含めたら、両者は無相関だとわかった！
+</span>
+
+
+
+
+
+
+

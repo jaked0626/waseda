@@ -1,0 +1,128 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{ltjarticle}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Report-1},
+  pdfauthor={Jake Underland},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=3cm]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{luatexja}
+
+\title{Report-1}
+\author{Jake Underland}
+\date{2021-10-25}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\hypertarget{section}{%
+\section{1}\label{section}}
+
+\textit{Claim:}
+完全競争であれば同じ財は地域に関わらず同じ価格であるはずであるから、その財に
+ついて競争的市場が成立していると考えられる国があるならば、それらの国と自国の間の市場価格を比較検討することによって、自国の不完全競争の度合いを調べることができる.
+\newline \newline
+誤り．そもそも，財が生産されている地域が異なれば，それは異質な財である．財に投入される材料の費用も異なれば，財が届けられるまでの交通等の中間過程も違うので，生産される地域によって財は異質なものと化す．また，地域が異なれば，その地域の消費者の需要曲線，先述したとおり供給者の費用曲線も異なるので，財の価格の直接比較はできない.
+
+\hypertarget{section-1}{%
+\section{2}\label{section-1}}
+
+\textit{Claim: }\\
+限界費用と市場価格が一致しないことが不完全競争における非効率性の原因であるから、機会費用も含めた企業の費用構造について信頼性の高い推計ができれば、推定された限界費用と実際の市場価格の差によって不完全競争の度合いを調べることができる.
+\newline \newline 正しい．
+
+\hypertarget{section-2}{%
+\section{3.}\label{section-2}}
+
+\textit{Claim:}\\
+供給側の不完全競争は定義としては企業に市場の利益が集中する現象であるから、消費者余剰と生産者余剰について信頼できる推定が可能であれば、総余剰に占める生産者余剰の割合を調べることによって、不完全競争の度合いを調べることができる。
+\newline \newline
+誤り．供給側の不完全競争の定義は企業への利益集中ではなく，非効率性にある．完全競争市場では，消費者の限界効用と生産者の限界費用は等しくなるが，不完全競争では企業の生産活動が直接的に価格に影響を与えるので，企業は価格を高く維持するために逓増していく限界費用が価格と等しくなる前に生産をやめる．これにより，非効率性（パレート非最適性）が生じる．総余剰に占める生産者余剰の割合は，例え完全競争であろうと供給曲線と需要曲線の形によっては高くなることがあるので，不完全競争の指標とはなり得ない．
+
+\hypertarget{section-3}{%
+\section{4.}\label{section-3}}
+
+\textit{Claim:}\\
+供給側の不完全競争によって非効率が発生している場合、その財の生産に対して企業に課税すれば、課税後の生産者価格の低下によって企業の限界費用が低下するため、企業の増産を促せる。この意味で、少なくともこの産業内の非効率性を低減する政策としては、課税は有効である。
+\newline \newline
+誤り．そもそも不完全競争における非効率性は生産者の上述した通り生産不足によるものだが，もし生産に課税をすれば，生産を伸ばす効果はなく，むしろ減らしてしまう場合もある
+\footnote{ここでは文字数に含まずに，この根拠を示す．以下では，固定税の場合と従量税の場合を考える．ただし，需要関数を$p = a - by$, 費用関数を固定税の場合と従量税の場合をそれぞれ$C(y) = cy + t$, $C(y) = cty$とする．\newline
+固定税の場合：
+$$\begin{aligned}
+\arg\!\max_y \;\;&py - C(y)  = (a-by)y - cy + t \\
+\implies& \frac{d}{dy} (a-by)y - cy + t \\
+&= a - 2by - c = 0 \\
+\implies& y = \frac{a - c}{2b}
+\end{aligned}$$
+で，課税のない場合の独占企業の生産量と変わらない． \newline
+従量税の場合:
+$$\begin{aligned}
+\arg\!\max_y \;\;&py - C(y)  = (a-by)y - cty \\
+\implies& \frac{d}{dy} (a-by)y - cty \\
+&= a - 2by - ct = 0 \\
+\implies& y = \frac{a - ct}{2b}
+\end{aligned}$$
+ここで$t > 1$（企業が払う課税なので）であるので，生産量は課税がない場合の$ \frac{a - c}{2b}$より減少する．}
+. そうすると，非効率性は解消されない．
+
+\end{document}

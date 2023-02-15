@@ -1,0 +1,152 @@
+---
+title: "LRM hw"
+author: "Jake Underland"
+date: "7/7/2020"
+output: html_document
+---
+
+
+```{r, include=FALSE}
+library("readr")
+```
+```{r}
+hr96_14 <- read.csv("data/hr96_14.csv", na =".")
+```
+<style>
+
+table, td, th {
+  border: none;
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+</style>
+
+```{r}
+library(stargazer)
+```
+
+```{r}
+library(dplyr)
+```
+
+
+
+
+
+```{r}
+names(hr96_14)
+```
+
+
+```{r}
+library("tidyverse")
+library("ggsignif")
+library("stargazer")
+```
+
+```{r}
+names(hr96_14)
+```
+```{r}
+unique(hr96_14$party)
+```
+
+```{r}
+HR <- hr96_14 %>%
+  mutate(jcp = as.numeric(party == "JCP"))
+```
+```{r}
+names(HR)
+```
+
+```{r}
+HR5 <- HR %>%
+  filter(year == 2005) %>%
+  select(voteshare, exppv, jcp)
+```
+
+```{r}
+head(HR5)
+```
+
+```{r, results="asis"}
+stargazer(as.data.frame(HR5), type = "text")
+```
+
+```{r}
+HR5 %>% 
+  ggplot(aes(exppv, voteshare)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Campaign Expenditure Per Voter (yen)", y = "Vote Share (%)",
+         title = "Candidate's Vote Share and Campaign Expenditure") +
+  geom_smooth(method = lm, se = FALSE)  # se = FALSE → 95% 信頼区間を消す
+```
+
+
+```{r}
+HR5 %>% 
+  ggplot(aes(jcp, voteshare)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "0 = not JCP, 1 = JCP", y = "Vote Share (%)",
+         title = "Candidate's Vote Share and JCP Affiliation") + 
+  geom_jitter(width = 0.02) + # データを散らして表示  
+  geom_smooth(method = lm, se = FALSE)  # se = FALSE → 95% 信頼区間を消す
+```
+
+```{r}
+MultipleRM <- lm(voteshare ~ exppv + jcp, 
+              data = HR5)
+```
+```{r}
+summary(MultipleRM)
+```
+voteshare = 24.79 - 19.86jcp + 0.451exppv 
+
+日本共産党議員の場合
+voteshare = 4.93 + 0.451exppv
+日本共産党議員でない場合
+voteshare = 24.79 + 0.451exppv 
+F検定は1％で有意
+帰無仮説は
+候補者が共産党公認か否かという変数 (jcp) の係数は 0
+候補者が使う有権者一人あたりの選挙費用 (exppv) の係数は 0
+両変数の p値が 0.01 より小さいので、有意水準 α= 0.01 (1 %) で帰無仮説が棄却
+Adjusted R-squared の値が 0.6397 → 応答変数 (voteshare) の分散の 63.97% が exppv と jcp によって説明できた
+
+```{r, results="asis"}
+stargazer(MultipleRM, type = "html")
+```
+
+
+
+
+
+```{r}
+## 予測値のデータフレームを作り pred と名前をつける
+pred <- with(HR5, expand.grid(
+  exppv = seq(min(exppv, na.rm=TRUE), max(exppv, na.rm=TRUE), length = 100),
+  jcp = c(0,1)
+))
+
+## mutate を使って、新たな変数である予測値 (pred) を作り計算する
+pred <- mutate(pred, voteshare = predict(MultipleRM, newdata = pred))
+
+## 散布図のドット (point) は観測値 (hr05) で描き、回帰直線は予測値 (pred) で描く
+p9 <- ggplot(HR5, aes(x = exppv, y = voteshare, color = as.factor(jcp))) +
+  geom_point(size = 1) + geom_line(data = pred)
+p9 <- p9 + labs(x = "expenditure / voter (yen)", y = "voteshare (%)")
+p9 <- p9 + scale_color_discrete(name = "jcp candidate", 
+                                labels = c("no","yes")) + guides(color = guide_legend(reverse = TRUE)) 
+print(p9 + ggtitle("Vote Share and Money with jcp endorsement"))
+```
+
+
+

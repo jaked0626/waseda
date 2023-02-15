@@ -1,0 +1,208 @@
+---
+title: 時系列分析 第 6 回 データの読込・編集
+# subtitle:
+author: Kenichiro Tamaki
+date: 2022 年 5 月 16 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# データの読込
+
+例として, NHK が提供している新型コロナウイルスの都道府県別データを用いる.
+
+- https://www3.nhk.or.jp/news/special/coronavirus/data/
+
+上記から, CSV ファイル「nhk_news_covid19_prefectures_daily_data.csv」をダウンロードする.
+
+RStudio の右上にある「Environment」→「Import Dateset」→「From Text (readr)...」において, CSV ファイルの読込が出来る (次が実行される). 
+
+```{r}
+library(readr) # パッケージを読み込む
+# CSV ファイルを読み込み, 変数に代入 (変数名はファイル名と同じ)
+nhk_news_covid19_prefectures_daily_data <- read_csv("nhk_news_covid19_prefectures_daily_data.csv")
+View(nhk_news_covid19_prefectures_daily_data) # データを見る
+```
+
+<p><br></p>
+
+# データの確認
+
+## データの確認
+
+まず, 変数名が長いので変更する.
+
+```{r}
+covid19 <- nhk_news_covid19_prefectures_daily_data # 変数名を変更
+```
+
+次に, データの中身を確認する.
+
+```{r}
+head(covid19, 5) # 最初の 5 個を表示
+tail(covid19, 5) # 最後の 5 個を表示
+```
+
+列名も長いので変更する.
+
+```{r}
+item <- c("感染者数日毎", "感染者数累計", "死者数日毎", "死者数累計", "感染者数/10万人") # 列名を作成
+n.item <- length(item) # 項目数
+colnames(covid19)[4:(n.item + 3)] <- item # 列名を変更
+```
+
+## 欠損値の確認
+
+欠損値の有無を確認する.
+
+```{r}
+sum(is.na(covid19)) # 欠損値の数
+```
+
+欠損値が存在するので削除する.
+
+```{r}
+covid19 <- na.omit(covid19) # 欠損値を削除
+sum(is.na(covid19)) # 欠損値の数
+```
+
+欠損値の数が 0 であるので, 欠損値はない.
+
+## 整合性の確認
+
+都道府県別の日付情報が同じであるか確認する. 準備として都道府県コードと都道府県名を取り出す.
+
+```{r}
+pcode <- unique(covid19$都道府県コード) # 都道府県コードを取り出す
+pcode # 都道府県コードを表示
+pref <- unique(covid19$都道府県名) # 都道府県名を取り出す
+pref # 都道府県名を表示
+n.pref <- length(pref) # 都道府県数
+n.pref # 都道府県数を表示
+```
+
+都道府県コード 01 (北海道) の日付情報を基準として調べる.
+
+```{r}
+c01 <- covid19[covid19$都道府県コード == "01",] # 都道府県コード 01 (北海道) のデータ
+date01 <- c01$日付 # 北海道の日付情報
+head(date01, 5) # 日付情報の最初の 5 個を表示
+```
+
+他の都道府県の日付情報が北海道と同じであるか確認する.
+
+```{r}
+date.check <- numeric(n.pref) # 確認用の変数を作成
+for (i in 2:n.pref) {
+	x <- covid19[covid19$都道府県コード == pcode[i],] # 都道府県コードが i 番目のデータ
+	date.check[i] <- sum(date01 != x$日付) # 北海道の日付情報と異なる数
+}
+date.check # 都道府県別の北海道の日付情報と異なる数
+```
+
+全て 0 であるので, 都道府県の日付情報は全て同じである.
+
+<p><br></p>
+
+# データの編集
+
+次の方法を紹介する.
+
+- 時系列データへ変換
+
+- 都道府県別の変数を作成
+
+- 項目毎の変数を作成
+
+## 時系列データへ変換
+
+時系列データへ変換し全部を格納した変数 (c.all) を作成する. 
+
+```{r}
+library(quantmod) # パッケージを読み込む
+c.all <- NULL # 全部を格納する変数を作成
+for (i in 1:n.pref) {
+	x <- covid19[covid19$都道府県コード == pcode[i],] # 都道府県コードが i 番目のデータ
+	x <- x[,-c(2, 3)] # 都道府県コードと都道府県名を削除
+	x <- as.xts(read.zoo(x)) # 時系列データへ変換
+	c.all <- cbind(c.all, x) # データを結合
+}
+```
+
+## 都道府県別の変数
+
+全て格納した時系列データの変数 (c.all) を用いて, 
+都道府県別に変数 (c + 都道府県コード) を作成する. つまり, 北海道は変数 (c01), 青森県は変数 (c02), ..., 東京都は変数 (c13), ..., 沖縄県は変数 (c47) を作成し格納する.
+
+```{r}
+colnames(c.all) <- rep(item, 47) # 列名を変更
+for (i in 1:n.pref) {
+	vname <- paste("c", pcode[i], sep = "") # 変数名を作成
+	assign(vname, c.all[,(n.item * (i - 1) + 1):(n.item * i)]) # 変数に格納
+}
+```
+
+```{r}
+pcode[which(pref == "東京都")] # 東京都のコード
+head(c13, 5) # 東京都の最初の 5 個を表示
+tail(c13, 5) # 東京都の最後の 5 個を表示
+```
+
+```{r}
+plot(c13, main = pref[13])
+```
+
+```{r}
+pcode[which(pref == "大阪府")] # 大阪府のコード
+plot(c27, main = pref[27])
+```
+
+## 項目毎の変数
+
+全て格納した時系列データの変数 (c.all) を用いて, 項目毎に変数を作成する. つまり, 感染者数日毎は変数 (c.all1), 感染者数累計は変数 (c.all2), 死者数日毎は変数 (c.all3), 死者数累計は変数 (c.all4), 感染者数/10万人は変数 (c.all5) を作成し格納する. 
+
+```{r}
+colnames(c.all) <- rep(pref, rep(5, 47)) # 列名を変更
+for (i in 1:n.item) {
+	vname <- paste("c.all", i, sep = "") # 変数名を作成
+	assign(vname, c.all[,seq(i, 47 * n.item, n.item)]) # 変数に格納
+}
+```
+
+```{r}
+head(c.all1) # 感染者数日毎の最初の 5 個を表示
+tail(c.all1) # 感染者数日毎の最後の 5 個を表示
+```
+
+```{r}
+plot(c.all1, main = item[1]) # 感染者数日毎
+```
+
+```{r}
+plot(c.all2, main = item[2]) # 感染者数累計
+```
+
+```{r}
+plot(c.all3, main = item[3]) # 死者数日毎
+```
+
+```{r}
+plot(c.all4, main = item[4]) # 死者数累計
+```
+
+```{r}
+plot(c.all5, main = item[5]) # 感染者数/10万人
+```

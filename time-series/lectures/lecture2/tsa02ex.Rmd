@@ -1,0 +1,378 @@
+---
+title: 時系列分析 第2回 分析例
+# subtitle:
+author: Kenichiro Tamaki
+date: 2022年4月18日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# パッケージ quantmod
+
+本パッケージを用いると, Yahoo Finance (US) から株価などのファイナンスデータを容易に入手できる. さらに, ソースを変更することにより, GDPなどのマクロデータも入手できる.
+
+```{r eval = FALSE}
+install.packages("quantmod") # パッケージをインストール
+```
+
+```{r}
+library("quantmod") # パッケージを読み込む
+```
+
+<p><br></p>
+
+# 株価の分析例
+
+## データの入手と編集
+
+株価データは Yahoo Finance (US) から入手可能である.
+
+- https://finance.yahoo.com
+
+まず, 上記からデータの Symbols を調べる. 企業名や証券コードで検索すれば良いが, 取引所により Symbols が異なる.
+
+- Apple
+
+  - AAPL (NMS: ナスダック証券取引所)    
+  https://finance.yahoo.com/quote/AAPL
+
+  - APC.F (FRA: フランクフルト証券取引所)    
+  https://finance.yahoo.com/quote/APC.F
+
+- トヨタ自動車 (Toyota Motor Corporation)
+
+  - 7203.T (JPX: 東京証券取引所, 7203は証券コード)    
+  https://finance.yahoo.com/quote/7203.T
+
+  - TM (NYQ: ニューヨーク証券取引所)    
+  https://finance.yahoo.com/quote/TM
+
+ここでは, Appleの日次株価を入手する.
+
+```{r}
+getSymbols("AAPL") # データを取得し AAPL に代入
+head(AAPL, 5) # 最初の5個を表示
+tail(AAPL, 5) # 最後の5個を表示
+```
+
+- Open = 始値, High = 高値, Low = 安値, Close = 終値, Volume = 出来高, Adjusted = 調整後終値
+
+- 終値: 株式分割を調整    
+Close price adjusted for splits.
+
+- 調整後終値: 株式分割と配当を調整    
+Adjusted close price adjusted for splits and dividend and/or capital gain distributions.
+
+- 調整方法の詳細は次のHelpをご覧下さい    
+https://help.yahoo.com/kb/adjusted-close-sln28256.html
+
+ここでは, 終値を用いる.
+
+```{r}
+aapl <- AAPL$AAPL.Close # 終値
+```
+
+記述統計量は次である.
+
+```{r}
+library(stargazer) # パッケージを読み込む
+stargazer(aapl, # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+データの一部を取り出したい場合は次のようにすれば良い.
+
+```{r eval = FALSE}
+aapl['2000'] # 2000年
+aapl['2000-01'] # 2000年1月
+aapl['2000-01-01::'] # 2000年1月1日以降
+aapl['::2000-01-01'] # 2000年1月1日以前
+aapl['2000-01-01::2020-12-31'] # 2000年1月1日から2020年12月31日まで
+```
+
+## 株価
+
+Appleの株価の時系列とコレログラム (自己相関関数) をプロットする.
+
+```{r}
+# 時系列プロット
+plot(aapl, # 標本
+     main = "Apple stock price") # 図題
+# コレログラム
+acf(coredata(aapl), # 標本, aapl ではエラーとなるので coredata(aapl) を用いる
+    main = "ACF of Apple stock price") # 図題
+```
+
+コレログラムより, 全てのラグにおいて自己相関があると判断できる.
+
+```{r}
+(T <- length(aapl)) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+```
+
+これより, ラグ $`r m`$ のかばん検定を行う.
+
+```{r}
+(res <- Box.test(coredata(aapl), # 標本
+                 lag = m, # ラグ
+                 type = "Ljung-Box")) # Ljung and Box (1978)
+```
+
+検定統計量の値は $Q(`r m`) = `r signif(res$statistic, 3)`$, $p$値は $`r signif(res$p.value, 3)`$ である. ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+**関数の作成**
+
+```{r}
+port <- function(x, lag) { # x = 標本, lag = ラグ
+  res <- Box.test(x, lag = lag, type = "Ljung-Box") # かばん検定
+  # ラグ, 検定統計量の値, 自由度, p値
+  return(c(lag, res$statistic, res$parameter, res$p.value))
+}
+```
+
+**表の作成**
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+res <- sapply(lag, port, x = coredata(aapl)) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "Appleの株価に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて$p$値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる. つまり, 自己相関があると判断できる.
+
+## 株価の対数収益率
+
+株価を対数収益率に変換する.
+
+```{r}
+aapl.dr <- periodReturn(aapl, # 標本
+                        period='daily', # 日次
+                        type = 'log') # 対数収益率
+```
+
+記述統計量は次である.
+
+```{r}
+stargazer(aapl.dr, # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+株価の対数収益率の時系列とコレログラム (自己相関関数) をプロットする.
+
+```{r}
+# 時系列プロット
+plot(aapl.dr, # 標本
+     main = "Log return of Apple stock price") # 図題
+# コレログラム
+acf(aapl.dr, # 標本
+    main = "ACF of log return of Apple stock price") # 図題
+```
+
+コレログラムより, 複数のラグにおいて自己相関があると判断できる.
+
+```{r}
+(T <- length(aapl.dr)) # 標本数
+(m <- round(log(T))) # ラグmの目安
+```
+
+これより, ラグ $`r m`$ のかばん検定を行う.
+
+```{r}
+(res <- Box.test(aapl.dr, # 標本
+                 lag = m, # ラグ
+                 type = "Ljung-Box")) # Ljung and Box (1978)
+```
+
+検定統計量の値は $Q(`r m`) = `r signif(res$statistic, 3)`$, $p$値は $`r signif(res$p.value, 3)`$ である. ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+res <- sapply(lag, port, x = aapl.dr) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "Appleの株価の対数収益率に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて$p$値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる. つまり, 自己相関があると判断できる. よって, Appleの株価は, 原系列と対数収益率の両方において自己相関があると判断できる. コレログラムより, 原系列の自己相関は極めて強いが, 対数収益率の自己相関は弱いことが分かる.
+
+<p><br></p>
+
+# GDPの分析例
+
+## データの入手と編集
+
+マクロデータは FRED (Federal Reserve Economic Data) から入手可能である. 
+
+- https://fred.stlouisfed.org/
+
+まず, 上記からデータの Symbols を調べる. 例えば, 日本のGDPは「gdp japan」と検索すれば良い. 四半期名目GDPは
+
+- https://fred.stlouisfed.org/series/JPNNGDP
+
+における, Gross Domestic Product for Japan (JPNNGDP) の括弧の中が Symbols である. ここでは, 日本の四半期名目GDP (単位: 10億円) を入手する.
+
+```{r}
+# Yahoo ではなく FRED からダウンロードするので src を変更する
+getSymbols("JPNNGDP", src = "FRED") # データを取得し JPNNGDP に代入
+head(JPNNGDP, 5) # 最初の5個を表示
+tail(JPNNGDP, 5) # 最後の5個を表示
+```
+
+四半期データの場合は, 1994-01-01は1994年1月1日時点ではなく1994年第1四半期のデータである. 日付表示を変更したい場合は次のようにすれば良い.
+
+```{r}
+jpnngdp <- to.quarterly(JPNNGDP, OHLC = F) # 日付を四半期に変更
+head(jpnngdp, 5) # 最初の5個を表示
+```
+
+記述統計量は次である.
+
+```{r}
+stargazer(jpnngdp, # 標本
+          type = "text", # 出力形式
+          summary = TRUE, # 記述統計量
+          digits = 0) # 少数点以下の最大表示桁数
+```
+
+データの一部を取り出したい場合は次のようにすれば良い.
+
+```{r eval = FALSE}
+JPNNGDP['2000'] # 2000年
+JPNNGDP['2000-01'] # 2000年第1四半期
+JPNNGDP['2000-04'] # 2000年第2四半期
+JPNNGDP['2000-01-01::'] # 2000年第1四半期以降
+JPNNGDP['::2000-01-01'] # 2000年第1四半期以前
+JPNNGDP['2000-01-01::2019-10-01'] # 2000年第1四半期から2019年第4四半期まで
+# 日付情報を変更した場合も同じ
+jpnngdp['2000-01-01::'] # 2000年第1四半期以降
+```
+
+## GDP
+
+GDPの時系列とコレログラム (自己相関関数) をプロットする.
+
+```{r}
+# 時系列プロット
+plot(jpnngdp, # 標本
+     main = "Nominal GDP for Japan") # 図題
+# コレログラム
+acf(jpnngdp, # 標本
+    main = "ACF of nominal GDP for Japan") # 図題
+```
+
+四半期データの場合, コレログラムのラグ $1$ は $4$ を意味している. これより, 大部分のラグにおいて自己相関があると判断できる.
+
+```{r}
+(T <- length(jpnngdp)) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+```
+
+これより, ラグ `r m` のかばん検定を行う.
+
+```{r}
+(res <- Box.test(jpnngdp, # 標本
+                 lag = m, # ラグ
+                 type = "Ljung-Box")) # Ljung and Box (1978)
+```
+
+検定統計量の値は $Q(`r m`) = `r signif(res$statistic, 3)`$, $p$値は $`r signif(res$p.value, 3)`$ である. ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+res <- sapply(lag, port, x = jpnngdp) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "日本の名目GDPに対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて$p$値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる. つまり, 自己相関があると判断できる.
+
+## GDP成長率
+
+GDPを成長率 (%) に変換する.
+
+```{r}
+# 成長率に変換
+jpnngdp.qr <- periodReturn(jpnngdp, # 標本
+                           period='quarterly') # 四半期
+jpnngdp.qr <- jpnngdp.qr * 100 # % に変換
+```
+
+記述統計量は次である.
+
+```{r}
+stargazer(jpnngdp.qr, # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+GDP成長率の時系列とコレログラム (自己相関関数) をプロットする.
+
+```{r}
+# 時系列プロット
+plot(jpnngdp.qr, # 標本
+     main = "Nominal GDP growth rate for Japan") # 図題
+# コレログラム
+acf(jpnngdp.qr, # 標本
+    main = "ACF of nominal GDP growth rate for Japan") # 図題
+```
+
+コレログラムより, 各ラグにおいて自己相関があるとは判断できない.
+
+```{r}
+(T <- length(jpnngdp.qr)) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+```
+
+これより, ラグ $`r m`$ のかばん検定を行う.
+
+```{r}
+(res <- Box.test(jpnngdp.qr, # 標本
+                 lag = m, # ラグ
+                 type = "Ljung-Box")) # Ljung and Box (1978)
+```
+
+検定統計量の値は $Q(`r m`) = `r signif(res$statistic, 3)`$, $p$値は $`r signif(res$p.value, 3)`$ である. ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+res <- sapply(lag, port, x = jpnngdp.qr) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "日本の名目GDP成長率に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて$p$値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 自己相関があるとは判断できない. よって, GDPは, 原系列は自己相関があると判断できるが, 成長率は自己相関があるとは判断できない.

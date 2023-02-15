@@ -1,0 +1,335 @@
+---
+title: "政府の市場介入と効率性"
+author: 
+ - "アンダーランド ジェイク" 
+ - "鈴鹿舞依"
+ - "白土なつき"
+date: "`r Sys.Date()`"
+geometry: "top=0cm, margin=1.4cm"
+output:
+  pdf_document:
+    latex_engine: lualatex
+    toc: false
+    toc_depth: 3
+    extra_dependencies: ["amsmath", "color", "hyperref", "luatexja"]
+    keep_tex: yes
+    fig_caption: yes
+  html_document:
+    toc: FALSE
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: FALSE
+    toc_depth: '3'
+documentclass: ltjarticle
+---
+
+```{r, include=FALSE}
+library(econocharts)
+library(ggplot2)
+library(tidyverse)
+library(ggsupplyDemand)
+```
+
+
+2021年は政府の介入のあり方が活発に議論された年だった。新型コロナウィルスの流行による消費の落ち込みは企業を切迫させ,第49回衆議院議員総選挙では補助金の支給、減税等の政府による市場介入が争点となった。岸田首相が打ち出した「新しい資本主義」は、市場介入に積極的な政府の姿勢を象徴し、従来の自民党の新自由主義路線からの差異化を図った。ただし、租税や補助金といった市場への政府の介入は、生産者価格と消費者価格の乖離を引き起こし、非効率性を生む。こうした事実を踏まえ、具体的な政府介入の例について記述した以下の文章を吟味し、正しいと思うものを1つ選びなさい。また、間違っている選択肢は、間違っている理由を説明しなさい。
+
+
+\begin{enumerate}
+\item 効率的な貿易政策を考える。効率性を図るための基準であるパレート最適性は次のように定義される：「誰かの状況を改善しようとすれば、他の誰かの状況を悪化させることになる」。日本では国内の米農家の利益を守るため、米に対して約800$\%$の関税を設けている。もし、この関税が撤廃されて米の自由貿易が解禁されれば、海外の低価格の米の流入により消費者は余剰を増加させるが、生産者は競走に敗退して余剰を減らしてしまう。上のパレート最適性の定義に従うと、たとえ自由貿易によって社会的余剰が増えたとしても、消費者の状況の改善が生産者の状況の悪化を意味するので、日本の現行の保護貿易政策はパレート最適であると言える。
+
+\item 独占企業によって市場の失敗が起きている市場を考える。公正取引委員会は、この企業が独占禁止法に違反すると判断し、この法人に罰金を科した。政府は罰金で得た金額を消費者に再分配すると仮定する。これは課税ではなく、事後的な分配であるため、企業の販売戦略に影響を与えることはない。再分配の結果、生産者余剰は減り、消費者余剰が増えたので、この市場の効率性は改善された。
+
+\item 税金は死荷重を生み、社会的余剰を減らしてしまう。しかし、税をかけても消費が減りにくい、つまり需要の価格弾力性が低い財では税金によって生じる死荷重の大きさが相対的に小さい。よって、政府の税収を確保するにあたり、生活必需品のような（需要の価格弾力性が低い）財に高い税金をかけることは社会的余剰の観点からは望ましい。一方で、消費における生活必需品の割合は、所得が低くなるほど高い。そのため、生活必需品に一律の税率を課すような税金は逆進性が高く、公平性の観点からは懸念が生じる可能性がある。
+
+
+\item 特定の財の取引に際し、政府が補助金を支払うことがある。例えば、太陽光発電パネルなどの製品は、製造する企業に補助金が支払われる。これは企業の限界費用曲線、すなわち供給曲線の下降を意味する。対して、GOTOや公的住宅手当のように補助金が生産者ではなく消費者に支払われる場合は、以下のグラフのような需要曲線の上昇で表すことができる。この時、消費者余剰の\textbf{増加分}は右下のグラフの赤色の部分(CS-increase)に相当し、生産者余剰の\textbf{増加分}は右下のグラフの青色の部分(PS-increase)に相当する。死荷重は緑色の部分(DWL)に相当する。  
+
+```{r, echo = FALSE}
+demand1 <- function(q) -0.6 * q + 8
+demand2 <- function(q) -0.6 * q + 12
+supply <- function(q) q + 2
+x <- 0:10
+q1 <- uniroot(function(x) demand1(x) - supply(x), range(x))$root
+q2 <- uniroot(function(x) demand2(x) - supply(x), range(x))$root
+p1 <- supply(q1)
+p2 <- supply(q2)
+p3 <- demand1(q2)
+z <- seq(0, q1, 0.01)
+z2 <- seq(q1, q2, 0.01)
+```
+```{r, warning = FALSE, message = FALSE, echo = FALSE, fig.show="hold", out.width="50%"}
+chart <- ggplot() +
+  xlim(0, 10) + 
+  ylim(0, 12) +
+  geom_function(aes(color = "D1"), fun = demand1) +
+  geom_function(aes(color = "D2"), fun = demand2) + 
+  geom_function(aes(color = "S"), fun = supply) +
+  annotate("point", x = q1, y = p1, color="grey30") +
+  annotate("point", x = q2, y = p2, color="grey30") +
+  annotate("segment", x = 0, xend = q1, y = p1, yend = p1,
+           linetype = "dashed", color = "grey30") +
+  xlab("q") + 
+  ylab("p") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+chart +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p1, # for color purposes
+                  fill = "DWL"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "PS"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = demand1(z),
+                  fill = "CS"), alpha = 0.5) 
+chart + 
+  annotate("segment", x = 0, xend = q2, y = p2, yend = p2,
+           linetype = "dashed", color = "grey30") +
+  annotate("segment", x = 0, xend = q2, y = p3, yend = p3,
+           linetype = "dashed", color = "grey30") +
+  geom_segment(aes(x = q2, y = p3, xend = q2, yend = p2 - 0.1),
+                  arrow = arrow(length = unit(0.3, "cm"))) +
+  geom_ribbon(aes(x = z2, ymin = supply(z2), ymax = p2,
+                  fill = "CS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = p3, ymax = demand1(z2),
+                  fill = "PS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p3, ymax = p1,
+                  fill = "PS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p2,
+                  fill = "CS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z2, ymin = demand1(z2), ymax = supply(z2),
+                  fill = "DWL"), alpha = 0.5)
+  
+```
+
+
+\end{enumerate}
+
+\newpage
+
+# 模範解答  
+
+\begin{enumerate}
+
+\item 誤り。この場合、自由貿易によって総余剰は増加する。この時、消費者余剰を事後的に生産者に分配すれば、双方が保護貿易下に比べ余剰を増やすことができる。すると、いずれの状況を悪化させることなく、関税の撤廃と自由貿易の導入により双方の余剰を増やすことができるので、保護貿易政策はパレート効率的ではない。
+
+\item 誤り。再分配したとしても改善されたのは公平性である。ここで行われた事後的な分配は企業の販売戦略には影響を与えない。そのため、社会的余剰の大きさは一切変わらず、その配分のみが変わるので、市場の効率性は変わらない。市場は非効率なままである。
+
+\item 正しい。
+
+\item 誤り。消費者余剰の増加分が青、生産者が赤であり、問題文とは逆である。正しいグラフは以下のFigure 1 に示す。ついでに、補助金が政府に支払われようが消費者に支払われようが（供給曲線の下降として表されようが需要曲線の上昇として表されようが）、それぞれの余剰の大きさ、死荷重の大きさは変わらないことが以下のFigure 1, Figure 2を比較することによってわかる。
+
+\end{enumerate}
+\begin{center} \textit{Figure 1} \end{center}
+```{r, warning = FALSE, message = FALSE, echo = FALSE, version2, fig.show="hold", out.width="50%"}
+chart <- ggplot() +
+  xlim(0, 10) + 
+  ylim(0, 12) +
+  geom_function(aes(color = "D1"), fun = demand1) +
+  geom_function(aes(color = "D2"), fun = demand2) + 
+  geom_function(aes(color = "S"), fun = supply) +
+  annotate("point", x = q1, y = p1, color="grey30") +
+  annotate("point", x = q2, y = p2, color="grey30") +
+  annotate("segment", x = 0, xend = q1, y = p1, yend = p1,
+           linetype = "dashed", color = "grey30") +
+  xlab("q") + 
+  ylab("p") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+chart +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p1, # for color purposes
+                  fill = "DWL"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "PS"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = demand1(z),
+                  fill = "CS"), alpha = 0.5) 
+chart + 
+  annotate("segment", x = 0, xend = q2, y = p2, yend = p2,
+           linetype = "dashed", color = "grey30") +
+  annotate("segment", x = 0, xend = q2, y = p3, yend = p3,
+           linetype = "dashed", color = "grey30") +
+  geom_segment(aes(x = q2, y = p3, xend = q2, yend = p2 - 0.1),
+                  arrow = arrow(length = unit(0.3, "cm"))) +
+  geom_ribbon(aes(x = z2, ymin = supply(z2), ymax = p2,
+                  fill = "PS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = p3, ymax = demand1(z2),
+                  fill = "CS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p3, ymax = p1,
+                  fill = "CS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p2,
+                  fill = "PS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z2, ymin = demand1(z2), ymax = supply(z2),
+                  fill = "DWL"), alpha = 0.5)
+  
+```
+  
+\begin{center} \textit{Figure 2} \end{center}
+
+```{r, echo = FALSE}
+demand <- function(q) -0.6 * q + 10
+supply1 <- function(q) q + 2
+supply2 <- function(q) q - 2
+x <- 0:10
+q1 <- uniroot(function(x) demand(x) - supply1(x), range(x))$root
+q2 <- uniroot(function(x) demand(x) - supply2(x), range(x))$root
+p1 <- supply1(q1)
+p2 <- supply2(q2)
+p3 <- supply1(q2)
+z <- seq(0, q1, 0.01)
+z2 <- seq(q1, q2, 0.01)
+```
+```{r, warning = FALSE, message = FALSE, echo = FALSE, version1, fig.show="hold", out.width="50%"}
+chart <- ggplot() +
+  xlim(0, 10) + 
+  ylim(0, 12) +
+  geom_function(aes(color = "D"), fun = demand) +
+  geom_function(aes(color = "S1"), fun = supply1) + 
+  geom_function(aes(color = "S2"), fun = supply2) +
+  annotate("point", x = q1, y = p1, color="grey30") +
+  annotate("point", x = q2, y = p2, color="grey30") +
+  annotate("segment", x = 0, xend = q1, y = p1, yend = p1,
+           linetype = "dashed", color = "grey30") +
+  xlab("q") + 
+  ylab("p") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+chart +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p1, # color purposes
+                  fill = "DWL"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = supply1(z), ymax = p1,
+                  fill = "PS"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = demand(z),
+                  fill = "CS"), alpha = 0.5) 
+chart + 
+  annotate("segment", x = 0, xend = q2, y = p2, yend = p2,
+           linetype = "dashed", color = "grey30") +
+  annotate("segment", x = 0, xend = q2, y = p3, yend = p3,
+           linetype = "dashed", color = "grey30") +
+  geom_segment(aes(x = q2, y = p3, xend = q2, yend = p2 - 0.1),
+                  arrow = arrow(length = unit(0.3, "cm"))) +
+  geom_ribbon(aes(x = z2, ymin = p2, ymax = demand(z2),
+                  fill = "CS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = supply1(z2), ymax = p3,
+                  fill = "PS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p3,
+                  fill = "PS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p2, ymax = p1,
+                  fill = "CS-increase"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z2, ymin = demand(z2), ymax = supply1(z2),
+                  fill = "DWL"), alpha = 0.5)
+  
+```
+
+
+
+
+\newpage
+\newpage
+\newpage
+
+# Paraphernalia  
+
+特定の財の取引に際し、政府が補助金を支払うことがある。例えば、太陽光発電パネルなどの製品は、製造する企業に補助金が支払われる。この時、左下のグラフで表されるように、企業の供給曲線（限界費用曲線）は補助金の分だけ下がり、右下のグラフに示されるような生産者余剰と消費者余剰の変化が起こる。ここで、補助金を受け取っているのは生産者なので、生産者余剰の方が大きい。対して、同じ補助金が生産者ではなく消費者に支払われる場合は、消費者の余剰の方が大きくなる。
+
+
+
+特定の財の取引に際し、政府が補助金を支払うことがある。例えば、太陽光発電パネルなどの製品は、製造する企業に補助金が支払われる。これは企業の限界費用曲線、すなわち供給曲線の下降を意味する。対して、GOTOや公的住宅手当のように補助金が生産者ではなく消費者に支払われる場合は、以下のグラフのような需要曲線の上昇で表すことができる。この時、消費者余剰の\textbf{増加分}は右下のグラフの赤色の部分(CS-increase)に相当し、生産者余剰の\textbf{増加分}は右下のグラフの青色の部分(PS-increase)に相当する。死荷重は緑色の部分(DWL)に相当する。
+
+```{r, echo = FALSE}
+demand1 <- function(q) -0.6 * q + 8
+demand2 <- function(q) -0.6 * q + 12
+supply <- function(q) q + 2
+x <- 0:10
+q1 <- uniroot(function(x) demand1(x) - supply(x), range(x))$root
+q2 <- uniroot(function(x) demand2(x) - supply(x), range(x))$root
+p1 <- supply1(q1)
+p2 <- supply1(q2)
+p3 <- demand2(q1)
+z <- seq(0, q1, 0.01)
+z2 <- seq(q1, q2, 0.01)
+```
+```{r, warning = FALSE, message = FALSE, echo = FALSE, fig.show="hold", out.width="50%"}
+chart <- ggplot() +
+  xlim(0, 10) + 
+  ylim(0, 12) +
+  geom_function(aes(color = "D1"), fun = demand1) +
+  geom_function(aes(color = "D2"), fun = demand2) + 
+  geom_function(aes(color = "S"), fun = supply) +
+  annotate("point", x = q1, y = p1, color="grey30") +
+  annotate("point", x = q2, y = p2, color="grey30") +
+  annotate("segment", x = 0, xend = q1, y = p1, yend = p1,
+           linetype = "dashed", color = "grey30") +
+  xlab("q") + 
+  ylab("p") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+chart +
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "PS"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = demand1(z),
+                  fill = "CS"), alpha = 0.5) 
+chart + 
+  annotate("segment", x = 0, xend = q2, y = p2, yend = p2,
+           linetype = "dashed", color = "grey30") +
+  annotate("segment", x = 0, xend = q1, y = p3, yend = p3,
+           linetype = "dashed", color = "grey30") +
+  geom_segment(aes(x = q1, y = p1, xend = q1, yend = p3),
+                  arrow = arrow(length = unit(0.3, "cm"))) +
+  geom_ribbon(aes(x = z, ymin = p3, ymax = demand2(z),
+                  fill = "CS-original"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "PS-original"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p2,
+                  fill = "PS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p2, ymax = p3,
+                  fill = "CS-increase"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = supply(z2), ymax = demand2(z2),
+                  fill = "DWL"), alpha = 0.5)
+  
+```
+
+
+\newpage
+
+```{r, warning = FALSE, message = FALSE, echo = FALSE, version3, fig.show="hold", out.width="50%"}
+chart <- ggplot() +
+  xlim(0, 10) + 
+  ylim(0, 12) +
+  geom_function(aes(color = "D1"), fun = demand1) +
+  geom_function(aes(color = "D2"), fun = demand2) + 
+  geom_function(aes(color = "S"), fun = supply) +
+  annotate("point", x = q1, y = p1, color="grey30") +
+  annotate("point", x = q2, y = p2, color="grey30") +
+  annotate("segment", x = 0, xend = q1, y = p1, yend = p1,
+           linetype = "dashed", color = "grey30") +
+  xlab("q") + 
+  ylab("p") +
+  theme(axis.text=element_blank(),
+        axis.ticks=element_blank())
+chart +
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "A"), alpha = 0.5) + 
+  geom_ribbon(aes(x = z, ymin = p1, ymax = demand1(z),
+                  fill = "B"), alpha = 0.5) 
+chart + 
+  annotate("segment", x = 0, xend = q2, y = p2, yend = p2,
+           linetype = "dashed", color = "grey30") +
+  annotate("segment", x = 0, xend = q1, y = p3, yend = p3,
+           linetype = "dashed", color = "grey30") +
+  geom_segment(aes(x = q1, y = p1, xend = q1, yend = p3),
+                  arrow = arrow(length = unit(0.3, "cm"))) +
+  geom_ribbon(aes(x = z, ymin = p3, ymax = demand2(z),
+                  fill = "A"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = supply(z), ymax = p1,
+                  fill = "B"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p1, ymax = p2,
+                  fill = "C"), alpha = 0.5) +
+  geom_ribbon(aes(x = z, ymin = p2, ymax = p3,
+                  fill = "D"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = p2, ymax = demand2(z2),
+                  fill = "E"), alpha = 0.5) +
+  geom_ribbon(aes(x = z2, ymin = supply(z2), ymax = p2,
+                  fill = "F"), alpha = 0.5)
+  
+```
+上のグラフで補助金ありの時の消費者余剰の合計は$A + D + E$であり、生産者余剰の合計は$B + C + F$である。よって、増加分はそれぞれ$D + E$, $C + F$である。死荷重は問題文通り$E+F$となる。
+
+

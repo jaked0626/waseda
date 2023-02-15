@@ -1,0 +1,94 @@
+---
+title: "Homework Assignment 04"
+subtitle: "Numerical Statistics Fall, 2022"
+author: Jake Underland - 1A193008
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    toc: false
+    extra_dependencies: ["amsmath", "xcolor", "bm"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, echo = FALSE}
+library(reticulate)
+```
+
+
+# 1.  
+Consider the set of data $\{(x_i,y_i)|i=1, 2, \dots, 6\} = \{(-2, -3), (-1, 0), (0, 1), (2, 3), (3, 4), (4, 7)\}$.  
+
+\begin{enumerate}
+\item[(1-1)] Find the Pearson correlation coefficient $r_{xy}$ based on the data.
+\newline
+\textbf{Solution.}\newline
+\begin{align*} \bar{x} &= \frac{(-2 + -1 + 0 + 2 + 3 + 4)}6  =1\\
+\bar{y} &= \frac{(-3 + 0 + 1 + 3 +4 + 7)}6 = 2
+\end{align*}
+
+$$\begin{array}{ccccccc}
+x & y & x - \bar{x} & y - \bar{y} & (x - \bar{x})(y - \bar{y}) & (x - \bar{x})^2 & (y - \bar{y})^2 \\
+\hline 
+-2 & -3 & -3 & -5 & 15 & 9 & 25 \\
+-1 & 0 & -2 & -2 & 4 & 4 & 4 \\
+0 & 1 & -1  &  -1 & 1 & 1 & 1 \\
+2 & 3 & 1  &  1 & 1 & 1 & 1 \\
+3 & 4 & 2  &  2 & 4 & 4 & 4 \\
+4 & 7 & 3  &  5 & 15 & 9 & 25 \\
+\hline 
+\text{Total} && 0 & 0 & 40 & 28 & 60
+\end{array}$$
+
+\hfill$\underline{\implies r_{xy} = \frac{40}{\sqrt{28\times 60}} = \frac{2\sqrt{105}}{21}} \ldots\Box$
+
+\item[(1-2)] Find the linear regression line, $y = \alpha + \beta x$, of $y$ on $x$ based on the data, and then express $\alpha$ and $\beta$ as irreducible fractions.  
+\newline
+\textbf{Solution.}\newline
+From the table above, $\bar{x} = 1, \;\bar{y} = 2, \; \sum_{i=1}^6(x_i-\bar{x})(y_i-\bar{y}) = 40,\; \sum_{i=1}^6(x_i-\bar{x})^2= 28$.  
+Thus, 
+$$\begin{aligned}
+\beta &= \frac{40}{28} = \frac{10}{7} \\
+\alpha &= 2 - \frac{10}{7} \times 1 = \frac{4}{7} \dots \Box
+\end{aligned}$$
+```{r, include=FALSE, echo=FALSE}
+x <- c(-2, -1, 0, 2, 3, 4)
+y <- c(-3, 0, 1, 3, 4, 7)
+model <- lm(y ~ x)
+summary(model)
+10 / 7
+4 / 7
+```
+
+\item[(1-3)] Find the coefficient of determination $R^2$ and then express it as an irreducible fraction. \newline
+\textbf{Solution.} \newline
+
+$$R^2 = r_{xy}^2 = \left(\frac{2\sqrt{105}}{21}\right)^2 = \frac{20}{21}\dots\Box$$
+\item[(1-4)] Find the explained variation $\sum_{i=1}^6(y_{est,i} - \bar{y})^2$ and then express it as an irreducible fraction. \newline
+\textbf{Solution.} \newline
+Since $r_{xy}^2 = \frac{\sum_{i=1}^6 (y_{est,i} - \bar{y})^2}{\sum_{i=1}^6(y_i - \bar{y})^2}$, we have 
+$$\sum_{i=1}^6(y_{est,i} - \bar{y})^2 = \frac{20}{21} \times 60 = \frac{400}{7}\dots \Box$$
+
+\item[(1-5)] Find the unexplained variation $\sum_{i=1}^6(y_i - y_{est,i})^2$ and then express it as an irreducible fraction.\newline
+\textbf{Solution.} \newline
+Since $\sum_{i=1}^{6}\left(y_{i}-\bar{y}\right)^{2}=\sum_{i=1}^{6}\left(y_{e s t, i}-\bar{y}\right)^{2}+\sum_{i=1}^{6}\left(y_{i}-y_{e s t, i}\right)^{2}$, we have 
+$$\begin{aligned}
+\sum_{i=1}^{6}\left(y_{i}-y_{e s t, i}\right)^{2}&=\sum_{i=1}^{6}\left(y_{i}-\bar{y}\right)^{2}-\sum_{i=1}^{6}\left(y_{e s t, i}-\bar{y}\right)^{2} \\
+&= 60 - \frac{400}{7} = \frac{20}{7} \dots \Box
+\end{aligned}$$
+\end{enumerate}
+
+
+

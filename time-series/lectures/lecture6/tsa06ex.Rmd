@@ -1,0 +1,441 @@
+---
+title: 時系列分析 第 6 回 分析例
+# subtitle:
+author: Kenichiro Tamaki
+date: 2022 年 5 月 16 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# 非定常時系列モデル {-}
+
+## ARIMA {-}
+
+原系列 $\{ y_{t} \}$ が非定常過程であり, $d - 1$ 階差分をとった系列も非定常過程であるが, $d$ 階差分をとった系列が定常過程であるとき, <span style="color: rgb(255, 0, 0);">$d$ 次の和分過程</span> (integrated process), もしくは 
+<span style="color: rgb(255, 0, 0);">$I(d)$ 過程</span>という.
+
+$d$ 階差分をとった系列 $(1 - L)^{d} y_{t}$ が ARMA$(p, q)$ 過程に従うとき, $y_{t}$ は ARIMA$(p, d, q)$ 過程に従うという.
+
+$$
+\phi(L) (1 - L)^{d} y_{t} = c + \theta(L) \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2})
+$$
+
+$$
+\begin{align}
+& \phi(L) = 1 - \phi_{1} L - \dots - \phi_{p} L^{p}, & & \theta(L) = 1 - \theta_{1} L - \dots - \theta_{q} L^{q}
+\end{align}
+$$
+
+## SARIMA (seasonal ARIMA) {-}
+
+季節性を含む時系列 $\{ y_{t} \}$ を考える. 周期を $S$ (月次データでは $S = 12$, 四半期データでは $S = 4$) とすると, $(1 - L^{S}) y_{t}$ は $S$ 時点前との差分である.
+
+$y_{t}$ が次のモデルに従うとき, $y_{t}$ は SARIMA$(p, d, q)(P, D, Q)_{S}$ 過程に従うという.
+
+$$
+\phi(L) \Phi(L^{S}) (1 - L)^{d} (1 - L^{S})^{D} y_{t} = c + \theta(L) \Theta(L^{S}) \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } (0, \sigma^{2})
+$$
+
+$$
+\begin{align}
+& \phi(L) = 1 - \phi_{1} L - \dots - \phi_{p} L^{p}, & & \theta(L) = 1 - \theta_{1} L - \dots - \theta_{q} L^{q} \\
+& \Phi(L) = 1 - \Phi_{1} L^{S} - \dots - \Phi_{P} L^{PS}, & & \Theta(L) = 1 - \Theta_{1} L^{S} - \dots - \Theta_{Q} L^{QS}
+\end{align}
+$$
+
+# パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(stargazer) # 記述統計量
+library(lmtest) # 時系列モデルにおける p 値
+library(forecast) # 予測
+```
+
+# 関数の作成
+
+自作関数は次である.
+
+**かばん検定**
+
+```{r}
+port <- function(x, lag, fitdf) { # x = 標本, lag = ラグ, fitdf = 自由度の減数
+  res <- Box.test(x, lag = lag, type = "Ljung-Box", fitdf = fitdf) # かばん検定
+  res <- c(lag, res$statistic, res$parameter, res$p.value) # ラグ, 検定統計量, 自由度, p 値
+  names(res) <- c("m", "Q(m)", "df", "p.value") # 名称
+
+  return(res)
+}
+```
+
+**情報量規準**
+
+```{r}
+ic.sarima <- function(x, Lp, Lq, d, order.s) { # x = 標本, Lp = AR 最大次数, Lq = MA 最大次数, d = 和分次数, order.s = 季節次数
+  # 結果を代入する変数
+  res.aic <- matrix(0, Lp + 1, Lq + 1) # AIC
+  res.bic <- matrix(0, Lp + 1, Lq + 1) # BIC
+  res.order <- matrix(0, 2, 3) # ARIMA 次数
+  res.order[,2] <- d # 和分次数
+
+  aic0 <- Inf # AIC の最小値の初期値
+  bic0 <- Inf # BIC の最小値の初期値
+
+  T <- length(x) # 標本数
+
+  for (p in 0:Lp) { # p は 0 から Lp まで繰り返す
+    for (q in 0:Lq) { # q は 0 から Lq まで繰り返す
+      # SARMA の推定
+      est <- arima(x, # 標本
+                   order = c(p, d, q), # AR 次数, 和分次数, MA 次数
+                   seasonal = list(order = order.s), # 季節次数
+                   method = "ML") # 最尤法
+
+      if (est$code == 0) { # 最適化が収束する場合
+        res.aic[p + 1, q + 1] <- AIC(est) / T # SARIMA の AIC
+        res.bic[p + 1, q + 1] <- BIC(est) / T # SARIMA の BIC
+
+        if (res.aic[p + 1, q + 1] < aic0) { # AIC が最小値より小さい場合
+          res.order[1,] <- c(p, d, q) # AIC を最小にする次数
+          aic0 <- res.aic[p + 1, q + 1] # AIC の最小値を更新
+        }
+        if (res.bic[p + 1, q + 1] < bic0) { # BIC が最小値より小さい場合
+          res.order[2,] <- c(p, d, q) # BIC を最小にする次数
+          bic0 <- res.bic[p + 1, q + 1] # BIC の最小値を更新
+        }
+      } else { # 最適化が収束しない場合
+        res.aic[p + 1, q + 1] <- NA # 欠損値
+        res.bic[p + 1, q + 1] <- NA # 欠損値
+      }
+    }
+  }
+
+  res.aic <- cbind(0:Lp, res.aic) # AR 次数を追加
+  colnames(res.aic) <- c("p ＼ q", 0:Lq) # AIC の列名
+  res.bic <- cbind(0:Lp, res.bic) # AR 次数を追加
+  colnames(res.bic) <- c("p ＼ q", 0:Lq) # BIC の列名
+  rownames(res.order) <- c("AIC", "BIC") # ARIMA 次数の行名
+  colnames(res.order) <- c("AR", "d", "MA") # ARIMA 次数の列名
+
+  return(list(AIC = res.aic, BIC = res.bic, order = res.order))
+}
+```
+
+# データの概要
+
+R に含まれている月別国際線乗客数 (AirPassengers) を用いて分析例を示す.
+
+- 1949 年 1 月 ～ 1960 年 12 月の 12 年間の月次データ (データ数 144)
+
+- 1949 年 1 月 ～ 1959 年 12 月の 11 年間の観測値を用いてモデルを構築
+
+- 1960 年 1 月 ～ 1960 年 12 月の値を予測し, 観測値と比較
+
+```{r eval = FALSE}
+?AirPassengers # データの説明
+```
+
+## 時系列プロット
+
+月別国際線乗客数の時系列をプロットする.
+
+```{r}
+plot(AirPassengers) # 時系列プロット
+```
+
+周期 $12$ の季節性がある.
+
+```{r}
+period <- frequency(AirPassengers) # 季節性の周期
+```
+
+## 記述統計量
+
+記述統計量は次である.
+
+```{r}
+stargazer(data.frame(AirPassengers), # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+## データの変換
+
+データはトレンドを含み, 時間と共に変動が大きくなっている. 変動を安定化させるため対数変換を行い, 線形トレンドを除去するために差分を取る.
+
+```{r fig.height = 4, fig.width = 9}
+AP <- window(AirPassengers, c(1949, 1), c(1959, 12)) # 1949 年 1 月から 1959 年 12 月までの観測値
+par(mfrow = c(1, 2)) # プロット画面を 1 行 2 列に分割
+plot(log(AP)) # 対数系列の時系列プロット
+plot(diff(log(AP))) # 対数差分系列の時系列プロット
+```
+
+対数差分系列は定常過程と考えられるが...
+
+# モデル
+
+## 自己相関
+
+まず, 対数差分系列の ACF (自己相関関数) と PACF (偏自己相関関数) をプロットする.
+
+```{r fig.height = 4, fig.width = 9}
+par(mfrow = c(1, 2)) # プロット画面を 1 行 2 列に分割
+acf(diff(log(AP)), lag.max = 36) # 自己相関関数
+pacf(diff(log(AP)), lag.max = 36) # 偏自己相関関数
+```
+
+ACF と PACF より, 自己相関があると判断できる.
+
+```{r}
+(T <- length(diff(log(AP)))) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+```
+
+上記で作成した関数を用いて, ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+```{r}
+fitdf <- 0 # 自由度の減数
+lag <- m * (1:3) + fitdf # ラグ m, 2m, 3m
+res.port <- sapply(lag, port, x = diff(log(AP)), fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+digits <- c(0, 2, 0, 4) # 少数点以下の最大表示桁数
+col.names <- c("$m$", "$Q(m)$", "自由度", "$p$ 値") # 列名
+knitr::kable(t(res.port), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "対数差分系列に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.01$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, 自己相関があると判断できる.
+
+## モデルの決定
+
+対数差分系列の ACF は値が大きく減衰が遅いので, 非定常過程の可能性が高い. さらに, ACF はラグ $`r period`$, $`r 2 * period`$, $`r 3 * period`$ において大きいので, 対数差分の季節差分系列 (周期 $`r period`$) を考える. 季節差分系列をプロットする.
+
+```{r}
+plot(diff(diff(log(AP)), lag = period)) # 時系列プロット
+```
+
+季節差分系列の ACF と PACF をプロットする.
+
+```{r fig.height = 4, fig.width = 9}
+par(mfrow = c(1, 2)) # プロット画面を 1 行 2 列に分割
+acf(diff(diff(log(AP)), lag = period), lag.max = 36) # 自己相関関数
+pacf(diff(diff(log(AP)), lag = period), lag.max = 36) # 偏自己相関関数
+```
+
+ACF と PACF より, 季節差分系列は定常過程と判断する (厳密には定常性の検定を行う必要がある). よって, 対数系列のモデルは SARIMA$(p, 1, q)(P, 1, Q)_{`r period`}$ が妥当である. さらに, ラグ $`r period`$ に強い相関があるから, 単純性を考慮して季節次数 $(P, 1, Q)$ を次とする.
+
+```{r}
+order.s <- c(0, 1, 1) # 季節次数
+```
+
+これより, 対数系列に SARIMA$(p, 1, q)(`r order.s`)_{`r period`}$ を用いて分析を行う.
+
+# 推定
+
+パッケージ forecast の関数 auto.arima により計算可能であるが, ここでは用いない.
+
+## 次数の決定
+
+上記で作成した関数を用いて, モデルの次数を決定する. 
+
+```{r warning = FALSE}
+Lp <- Lq <- 2 # 最大次数
+d <- 1 # 和分次数
+res.ic <- ic.sarima(log(AP), Lp, Lq, d, order.s) # 情報量規準を計算
+
+# AIC の表を作成
+knitr::kable(res.ic$AIC, # AIC
+             digits = c(0, rep(3, Lq + 1)), # 少数点以下の最大表示桁数
+             col.names =  c("$p$ $\\backslash$ $q$", 0:Lq), # 列名
+             caption = "対数系列に対する SARIMA($p, 1, q$)($0, 1, 1$)$_{12}$ の AIC") # 表題
+
+# BIC の表を作成
+knitr::kable(res.ic$BIC, # BIC
+             digits = c(0, rep(3, Lq + 1)), # 少数点以下の最大表示桁数
+             col.names =  c("$p$ $\\backslash$ $q$", 0:Lq), # 列名
+             caption = "対数系列に対する SARIMA($p, 1, q$)($0, 1, 1$)$_{12}$ の BIC") # 表題
+
+# ARIMA 次数の表を作成
+knitr::kable(res.ic$order, # ARMA 次数
+             caption = "対数系列に対する SARIMA($p, 1, q$)($0, 1, 1$)$_{12}$ の 次数") # 表題
+```
+
+AIC と BIC の両方において, SARIMA$(`r res.ic$order[1,]`)(`r order.s`)_{`r period`}$ が選択される.
+
+## パラメータの推定
+
+SARIMA$(`r res.ic$order[1,]`)(`r order.s`)_{`r period`}$ を用いて推定を行う. 推定結果は次である.
+
+```{r}
+M1 <- arima(log(AP), # 標本
+            order = res.ic$order[1,], # ARIMA 次数
+            seasonal = list(order = order.s, period = period), # 季節次数, 周期
+            method = "ML") # 最尤法
+M1 # 推定結果の表示
+```
+
+関数 arima において定数項は平均であるから, 和分過程の場合は定数項はない.
+
+係数の有意性について考える. $p$ 値を計算するために, パッケージ lmtest にある関数 coeftest を用いる.
+
+```{r}
+coeftest(M1) # 係数の p 値
+```
+
+係数は全て有意水準 $1 \%$ で有意である. 上記より, 原系列を $\{ y_{t} \}$ とすると, 推定されたモデルは次である.
+
+$$
+(1 - L) (1 - L^{12}) \log y_{t} = (1 `r signif(M1$coef[1], 3)` L) (1 `r signif(M1$coef[2], 3)` L^{12}) \varepsilon_{t}, \quad \sigma^{2} = `r signif(M1$sigma2, 3)`
+$$
+
+## モデル診断
+
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. まずは, 残差を取り出す.
+
+```{r}
+r1 <- residuals(M1) # 残差
+```
+
+対数系列と残差の ACF と PACF をプロットする,
+
+```{r fig.height = 6, fig.width = 9}
+par(mfrow = c(2, 2)) # プロット画面を 2 行 2 列に分割
+acf(log(AP)); pacf(log(AP)); # 対数系列
+acf(r1); pacf(r1) # 残差
+```
+
+自己相関関数と偏自己相関関数より, 残差に自己相関があると判断できない. 
+
+かばん検定を行う. 残差に対する検定であるから自由度が減少する.
+
+```{r}
+fitdf <- 2 # 自由度の減数
+lag <- 1:(2 * m) + fitdf # ラグ (1, ..., 2m) + fitdf
+res.port1 <- sapply(lag, port, x = r1, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = digits, # 少数点以下の最大表示桁数
+             col.names = col.names, # 列名
+             caption = "残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全ての自由度において $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, モデルは妥当である.
+
+# 予測
+
+パッケージ forecast を用いて予測を行う. 推定されたモデルを用いて $12$ 期先予測を行う.
+
+```{r}
+n.ahead <- 12 # 期先
+f1 <- forecast(M1, h = n.ahead) # 予測
+```
+
+対数系列の結果を原系列の結果に変換する.
+
+```{r}
+f1$x <- exp(f1$x) # 観測値
+f1$mean <- exp(f1$mean) # 予測値
+f1$lower <- exp(f1$lower) # 信頼区間の下限
+f1$upper <- exp(f1$upper) # 信頼区間の上限
+```
+
+予測値と観測値を重ねてプロットする. 図を重ねる場合は, $y$ 軸の範囲を合わせる必要がある.
+
+```{r}
+range(AirPassengers) # 値域
+ylim <- c(100, 800) # y 軸の範囲
+plot(f1, # 予測値
+     ylim = ylim) # y 軸の範囲
+par(new = T) # 次のプロットを重ねる
+plot(AirPassengers, # 観測値
+     ylim = ylim) # y 軸の範囲
+```
+
+予測部分のみをプロットする. 月次データの場合は目盛が不自然なので変更する.
+
+```{r}
+AP1 <- window(AirPassengers, c(1960, 1), c(1960, 12)) # 予測部分の観測値
+xlim <- c(1960, 1960 + 11 / 12) # x 軸の範囲
+range(AP1) # 値域
+ylim <- c(300, 800) # y 軸の範囲
+plot(f1, # 予測値
+     xlim = xlim, # x 軸の範囲
+     ylim = ylim, # y 軸の範囲
+     axes = FALSE, # 目盛を表示しない
+     frame.plot = TRUE) # 枠を表示する
+par(new = T) # 次のプロットを重ねる
+plot(AP1, # 観測値
+     xlim = xlim, # x 軸の範囲
+     ylim = ylim, # y 軸の範囲
+     axes = FALSE, # 目盛を表示しない
+     frame.plot = TRUE) # 枠を表示する
+
+# x軸の目盛を変更
+xat <- 1960 + (0:11) / 12 # x 軸の目盛の位置
+axis(1, at = xat, labels = paste(month.abb, 1960)) # x 軸に目盛を追加
+
+# y軸の目盛を変更
+yat <- (3:8) * 100 # y 軸の目盛の位置
+axis(2, at = yat, labels = yat) # y 軸に目盛を追加
+```
+
+予測値と観測値の差の 2 乗の平均は次である.
+
+```{r}
+mean((f1$mean - AP1)^2)
+```
+
+# 補足: 変数の追加
+
+ダミー変数などの変数を追加する方法を紹介する. 例として, ダミー変数を用いる.
+
+```{r}
+# 夏季ダミー
+D.summer <- rep(rep(c(0, 1, 0), c(6, 3, 3)), # 0, 1, 0 を 6, 3, 3 回繰り返す (0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0)
+                length.out = length(log(AP))) # ベクトルの長さ
+# 8 月ダミー
+D.aug <- rep(rep(c(0, 1, 0), c(7, 1, 4)), # 0, 1, 0 を 7, 1, 4 回繰り返す (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
+             length.out = length(log(AP))) # ベクトルの長さ
+```
+
+変数が 1 つの場合は次である.
+
+```{r}
+M2 <- arima(log(AP), # 標本
+            order = res.ic$order[1,], # ARIMA 次数
+            seasonal = list(order = order.s, period = period), # 季節次数, 周期
+            xreg = D.summer, # 変数を追加
+            method = "ML") # 最尤法
+M2 # 推定結果の表示
+```
+
+変数が複数の場合は次である.
+
+```{r}
+M3 <- arima(log(AP), # 標本
+            order = res.ic$order[1,], # ARIMA 次数
+            seasonal = list(order = order.s, period = period), # 季節次数, 周期
+            xreg = cbind(D.summer, D.aug), # 複数の変数を追加
+            method = "ML") # 最尤法
+M3 # 推定結果の表示
+```

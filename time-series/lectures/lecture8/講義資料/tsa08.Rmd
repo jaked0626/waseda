@@ -1,0 +1,238 @@
+---
+title: 時系列分析 第 8 回
+subtitle: VAR 2
+author: Kenichiro Tamaki
+date: 2022 年 5 月 30 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+## 4.5 分散分解 {-}
+
+変数間の動学的関係を定量的に分析する手法であり, 予測の MSE を各変数の撹乱項が寄与する部分に分解し, 予測できない変動の説明に重要な変数を明らかにする.
+
+- 直交化撹乱項を用いるので, 変数の並び順が重要 ⇒ 外生性の高い順に並べる
+
+>**定義 4.5 (分散分解, p.94)**  
+$y_{i}$ の $k$ 期先予測の MSE に対して, $y_{j}$ の直交化撹乱項 $u_{j, t + 1}, \dots, u_{j, t + k}$ が寄与する割合を, $y_{i}$ の $k$ 期先予測における $y_{j}$ の 相対的分散寄与率 (relative variance contribution, RVC) という. 
+$$
+\text{RVC}_{ij}(k) = \frac{\text{MSE}(\hat{y}_{i, t + k \vert t}) \text{ において } y_{j} \text{ が寄与する部分}}{\text{MSE}(\hat{y}_{i, t + k \vert t})}
+$$
+
+**分散分解 (variance decomposition)**
+
+- 各変数について, $\text{RVC}_{ij}(k)$ を $k$ の関数として求めること
+
+- 予測誤差分散分解 (forecast error variance decomposition) ともいう
+
+分散分解から次が分かる.
+
+- 短期的に重要な変動要因
+
+- 長期的に重要な変動要因
+
+**例**
+
+$2$ 変量 VAR$(1)$
+
+$$
+\begin{align}
+& \boldsymbol{y}_{t} = \boldsymbol{c} + \Phi \boldsymbol{y}_{t - 1} + \boldsymbol{\varepsilon}_{t}, \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma) \\
+& \\
+& \boldsymbol{c} =
+\begin{pmatrix}
+-1 \\
+1
+\end{pmatrix},
+\quad
+\Phi =
+\begin{pmatrix}
+0.6 & 0.3 \\
+0.1 & 0.8
+\end{pmatrix},
+\quad
+\Sigma =
+\begin{pmatrix}
+4 & 1.2 \\
+1.2 & 1
+\end{pmatrix}
+\end{align}
+$$
+
+直交化撹乱項は次である.
+$$
+\boldsymbol{u}_{t} = A^{-1} \boldsymbol{\varepsilon}_{t} \sim \text{WN} (D),
+\quad
+A =
+\begin{pmatrix}
+1 & 0 \\
+0.3 & 1
+\end{pmatrix},
+\quad
+D =
+\begin{pmatrix}
+4 & 0 \\
+0 & 0.64
+\end{pmatrix}
+$$
+
+$\boldsymbol{y}_{t+1} = \boldsymbol{c} + \Phi \boldsymbol{y}_{t} + A \boldsymbol{u}_{t+1}$ より, $1$ 期先予測は
+$$
+\hat{\boldsymbol{y}}_{t+1 \vert t} = \boldsymbol{c} + \Phi \boldsymbol{y}_{t}
+$$
+であるから, 予測誤差は次である.
+$$
+\hat{\boldsymbol{y}}_{t+1 \vert t} - \boldsymbol{y}_{t+1} 
+= A \boldsymbol{u}_{t}
+=
+\begin{cases}
+u_{1,t+1} \\
+0.3 u_{1,t+1} + u_{2,t+1}
+\end{cases}
+$$
+よって,
+$$
+\begin{align}
+\text{MSE}(\hat{y}_{1, t + 1 \vert t}) &= E[u_{1, t + 1}^{2}] = 4 \\
+& \\
+\text{MSE}(\hat{y}_{2, t + 1 \vert t}) &= E[(0.3 u_{1, t + 1} + u_{2, t + 1})^{2}] \\
+&= E[(0.3 u_{1, t + 1})^{2}] + E[u_{2, t + 1}^{2}] \\
+&= 0.3^{2} \times 4 + 0.64 \\
+&= 1
+\end{align}
+$$
+
+- $1$ 期先予測の RVC
+
+  - $y_{1}$ の $1$ 期先予測における RVC
+  $$
+  \begin{align}
+  & \text{RVC}_{11}(1) = \frac{E[u_{1, t + 1}^{2}]}{\text{MSE}(\hat{y}_{1, t + 1 \vert t})} = \frac{4}{4} = 1 \\
+  & \text{RVC}_{12}(1) = \frac{0}{\text{MSE}(\hat{y}_{1, t + 1 \vert t})} = \frac{0}{4} = 0
+  \end{align}
+  $$
+
+  - $y_{2}$ の $1$ 期先予測における RVC
+  $$
+  \begin{align}
+  & \text{RVC}_{21}(1) = \frac{E[(0.3 u_{1, t + 1})^{2}]}{\text{MSE}(\hat{y}_{2, t + 1 \vert t})} = \frac{0.3^{2} \times 4}{1} = 0.36 \\
+  & \text{RVC}_{22}(1) = \frac{E[u_{2, t + 1}^{2}]}{\text{MSE}(\hat{y}_{2, t + 1 \vert t})} = \frac{0.64}{1} = 0.64
+  \end{align}
+  $$
+
+$\boldsymbol{y}_{t + 2} = \boldsymbol{c} + \Phi \boldsymbol{y}_{t + 1} + A \boldsymbol{u}_{t + 2} = \boldsymbol{c} + \Phi \boldsymbol{c} + \Phi^{2} \boldsymbol{y}_{t} + A \boldsymbol{u}_{t + 2} + \Phi A \boldsymbol{u}_{t + 1}$ より, $2$ 期先予測は
+$$
+\hat{\boldsymbol{y}}_{t + 2 \vert t} = \boldsymbol{c} + \Phi \hat{\boldsymbol{y}}_{t + 1 \vert t} = \boldsymbol{c} + \Phi \boldsymbol{c} + \Phi^{2} \boldsymbol{y}_{t}
+$$
+であるから, 予測誤差は次である.
+$$
+\hat{\boldsymbol{y}}_{t + 2 \vert t} - \boldsymbol{y}_{t + 2}
+= A \boldsymbol{u}_{t + 2} + \Phi A \boldsymbol{u}_{t + 1}
+=
+\begin{cases}
+u_{1, t + 2} + 0.69 u_{1, t + 1} + 0.3 u_{2, t + 1} \\
+0.3 u_{1, t + 2} + u_{2, t + 2} + 0.34 u_{1, t + 1} + 0.8 u_{2, t + 1}
+\end{cases}
+$$
+よって,
+$$
+\begin{align}
+\text{MSE}(\hat{y}_{1, t + 2 \vert t}) &= E[(u_{1, t + 2} + 0.69 u_{1, t + 1} + 0.3 u_{2, t + 1})^{2}] \\
+&= E[u_{1, t + 2}^{2}] + E[(0.69 u_{1, t + 1})^{2}] + E[(0.3 u_{2, t + 1})^{2}] \\
+&= 4 + 0.69^{2} \times 4 + 0.3^{2} \times 0.64 \\
+& \\
+\text{MSE}(\hat{y}_{2, t + 2 \vert t}) &= E[(0.3 u_{1, t + 2} + u_{2, t + 2} + 0.34 u_{1, t + 1} + 0.8 u_{2, t + 1})^{2}] \\
+&= E[(0.3 u_{1, t + 2})^{2} + E[(0.34 u_{1, t + 1})^{2}] + E[u_{2, t + 2}^{2}] + E[(0.8 u_{2, t + 1})^{2}] \\
+&= 0.3^{2} \times 4 + 0.34^{2} \times 4 + 0.64 + 0.8^{2} \times 0.64 
+\end{align}
+$$
+
+- $2$ 期先予測の RVC
+
+  - $y_{1}$ の $2$ 期先予測における RVC
+  $$
+  \begin{align}
+  & \text{RVC}_{11}(2) = \frac{E[u_{1, t + 2}^{2}] + E[(0.69 u_{1, t + 1})^{2}]}{\text{MSE}(\hat{y}_{1, t + 2 \vert t})} = \frac{4 + 0.69^{2} \times 4}{4 + 0.69^{2} \times 4 + 0.3^{2} \times 0.64} \approx 0.99 \\
+  & \text{RVC}_{12}(2) = \frac{E[(0.3 u_{2, t + 1})^{2}]}{\text{MSE}(\hat{y}_{1, t + 2 \vert t})} = \frac{0.3^{2} \times 0.64}{4 + 0.69^{2} \times 4 + 0.3^{2} \times 0.64} \approx 0.01
+  \end{align}
+  $$
+
+  - $y_{2}$ の $2$ 期先予測における RVC
+  $$
+  \begin{align}
+  & \text{RVC}_{21}(2) = \frac{E[(0.3 u_{1, t + 2})^{2} + E[(0.34 u_{1, t + 1})^{2}]}{\text{MSE}(\hat{y}_{2, t + 2 \vert t})} = \frac{0.3^{2} \times 4 + 0.34^{2} \times 4}{0.3^{2} \times 4 + 0.34^{2} \times 4 + 0.64 + 0.8^{2} \times 0.64} \approx 0.44 \\
+  & \text{RVC}_{22}(2) = \frac{E[u_{2, t + 2}^{2}] + E[(0.8 u_{2, t + 1})^{2}]}{\text{MSE}(\hat{y}_{2, t + 2 \vert t})} = \frac{0.64 + 0.8^{2} \times 0.64}{0.3^{2} \times 4 + 0.34^{2} \times 4 + 0.64 + 0.8^{2} \times 0.64} \approx 0.56
+  \end{align}
+  $$
+
+一般的に, VAR の VMA 表現を求めることにより, $k$ 期先予測の RVC を計算することができる. 
+
+## 4.6 構造 VAR {-}
+
+- VAR は変数の過去のみを含む ⇒ 同時点の変数が互いに影響を及ぼさないと仮定
+
+- 構造 VAR (structural VAR, SVAR) は同時点の変数間の関係を明示的に考慮した VAR
+
+- $n$ 変量構造 VAR$(p)$
+$$
+B_{0} \boldsymbol{y}_{t} = \boldsymbol{b} + B_{1} \boldsymbol{y}_{t - 1} + \dots + B_{p} \boldsymbol{y}_{t - p} + \boldsymbol{u}_{t}, \quad \boldsymbol{u}_{t} \sim \text{WN} (D)
+$$
+  
+  - $B_{0}$ は対角成分が $1$ の $n \times n$ 行列で,  同時点の変数間の関係を表す
+  
+  - $D$ は対角行列で, 撹乱項は相関がない (同時点の変数間の相関は $B_{0}$ で捉える)
+
+**注意点**
+
+- 説明変数と撹乱項に相関があるので, 同時方程式バイアスが生じる
+
+- 直接推定することは困難であるので, 構造型を誘導型に変換する
+$$
+\begin{align}
+\boldsymbol{y}_{t} &= B_{0}^{-1} \boldsymbol{b} + B_{0}^{-1} B_{1} \boldsymbol{y}_{t - 1} + \dots + B_{0}^{-1} B_{p} \boldsymbol{y}_{t - p} + B_{0}^{-1} \boldsymbol{u}_{t}, \quad \boldsymbol{u}_{t} \sim \text{WN} (D) \\
+& \\
+&= \boldsymbol{c} + \Phi_{1} \boldsymbol{y}_{t - 1} + \dots + \Phi_{p} \boldsymbol{y}_{t - p} + \boldsymbol{\varepsilon}_{t}, \quad \boldsymbol{\varepsilon}_{t} \sim \text{WN} (\Sigma) \\
+& \\
+& \qquad \boldsymbol{c} = B_{0}^{-1} \boldsymbol{b}, \quad
+\Phi_{i} = B_{0}^{-1} B_{i}, \quad
+\boldsymbol{\varepsilon}_{t} = B_{0}^{-1} \boldsymbol{u}_{t}, \quad
+\Sigma = B_{0}^{-1} D (B_{0}^{-1})^{\prime}
+\end{align}
+$$
+
+- 誘導型で推定し, 構造型を復元すれば良い
+
+**SVAR の識別性**
+
+- 誘導型から構造型を復元できるとは限らない
+
+  - 構造型の $n$ 変量 VAR$(p)$ のパラメータ数 $= n (n - 1) + n + n^{2} p + n$
+  
+  - 誘導型の $n$ 変量 VAR$(p)$ のパラメータ数 $= n + n^{2} p + \dfrac{1}{2} n (n + 1)$
+  
+  - 構造型の方が $\dfrac{1}{2} n (n - 1)$ 個多い
+  
+- 構造 VAR は $\dfrac{1}{2} n (n - 1)$ 個の制約条件が必要
+
+  - 再帰的構造を仮定する (再帰的構造 VAR)
+
+    - $B_{0}$ を下三角行列とする
+
+    - 外生性の高い順に並べる必要がある
+    
+  - 再帰的構造を仮定しない
+
+    - 経済理論などから導かれる短期的・長期的な均衡関係を用いて制約を課す

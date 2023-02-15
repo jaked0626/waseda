@@ -1,0 +1,77 @@
+---
+title: "Ch 14 HW"
+author: "Jake Underland"
+date: "7/14/2020"
+output: html_document
+---
+```{r}
+df <- read_rds("data/hr96-17.Rds")
+```
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(stargazer)
+library(margins)
+library(ggeffects)
+library(interplot)
+library(msm)
+library(patchwork)
+library(jtools)
+```
+
+```{r}
+df1 <- df %>%　
+  dplyr::filter(year == 2012) %>%　  
+  dplyr::select(voteshare, exppv, previous) 
+```
+
+```{r}
+head(df1)
+```
+```{r}
+stargazer(as.data.frame(df1), 
+          type = "text")
+```
+```{r}
+F1 <- ggplot(df1, aes(exppv, voteshare)) +
+  geom_point() +
+  labs(x = "選挙費用（円：有権者一人あたり）", y = "得票率 (%)",
+         title = "選挙費用と得票率") + 
+  stat_smooth(method = lm, se = TRUE)
+F1
+```
+```{r}
+F2 <- ggplot(df1, aes(previous, voteshare)) +
+  geom_point() +
+  labs(x = "当選回数", y = "得票率 (%)",
+         title = "当選回数と得票率") + 
+  stat_smooth(method = lm, se = TRUE)
+F2
+```
+```{r}
+library(patchwork)
+```
+
+```{r}
+F1 + F2 + plot_layout(ncol = 2)
+```
+
+
+```{r}
+model_1 <- lm(voteshare ~ exppv*previous, 
+              data = df1)
+summary(model_1)
+```
+
+交差項が統計的に有意
+
+```{r}
+model <- lm(voteshare ~ exppv + 
+              previous + 
+              exppv*previous, 
+            data = df1)
+summary(model)
+```
+
+

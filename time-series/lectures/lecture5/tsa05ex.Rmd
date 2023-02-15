@@ -1,0 +1,499 @@
+---
+title: 時系列分析 第 5 回 分析例 1
+subtitle: ARMA
+author: Kenichiro Tamaki
+date: 2022 年 5 月 9 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(quantmod) # データの取得
+library(stargazer) # 記述統計量
+library(lmtest) # 時系列モデルにおける p 値
+library(forecast) # 予測
+```
+
+# 関数の作成
+
+自作関数は次である.
+
+**かばん検定**
+
+```{r}
+port <- function(x, lag, fitdf) { # x = 標本, lag = ラグ, fitdf = 自由度の減数
+  res <- Box.test(x, lag = lag, type = "Ljung-Box", fitdf = fitdf) # かばん検定
+  res <- c(lag, res$statistic, res$parameter, res$p.value) # ラグ, 検定統計量, 自由度, p 値
+  names(res) <- c("m", "Q(m)", "df", "p.value") # 名称
+
+  return(res)
+}
+```
+
+出力例
+
+```{r}
+T <- 500 # 標本数
+p <- 1; ar.c <- 0.5 # AR 次数; AR 係数
+lag <- 5 # ラグ
+fitdf <- 0 # 自由度の減数
+# AR(p) の模擬データ
+x <- arima.sim(n = T, # 標本数
+               list(order = c(p, 0, 0), ar = ar.c)) # AR 次数, AR 係数
+port (x, lag, fitdf)
+```
+
+**情報量規準**
+
+```{r}
+ic.arma <- function(x, Lp, Lq) { # x = 標本, Lp = AR 最大次数, Lq = MA 最大次数
+  # 結果を代入する変数
+  res.aic <- matrix(0, Lp + 1, Lq + 1) # AIC
+  res.bic <- matrix(0, Lp + 1, Lq + 1) # BIC
+  res.order <- matrix(0, 2, 2) # ARMA 次数
+
+  aic0 <- Inf # AIC の最小値の初期値
+  bic0 <- Inf # BIC の最小値の初期値
+
+  T <- length(x) # 標本数
+
+  for (p in 0:Lp) { # p は 0 から Lp まで繰り返す
+    for (q in 0:Lq) { # q は 0 から Lq まで繰り返す
+      # ARMA(p, q) の推定
+      est <- arima(x, # 標本
+                   order = c(p, 0, q), # AR 次数, MA 次数
+                   method = "ML") # 最尤法
+
+      if (est$code == 0) { # 最適化が収束する場合
+        res.aic[p + 1, q + 1] <- AIC(est) / T # ARMA(p, q) の AIC
+        res.bic[p + 1, q + 1] <- BIC(est) / T # ARMA(p, q) の BIC
+
+        if (res.aic[p + 1, q + 1] < aic0) { # AIC が最小値より小さい場合
+          res.order[1,] <- c(p, q) # AIC を最小にする次数
+          aic0 <- res.aic[p + 1, q + 1] # AIC の最小値を更新
+        }
+        if (res.bic[p + 1, q + 1] < bic0) { # BIC が最小値より小さい場合
+          res.order[2,] <- c(p, q) # BIC を最小にする次数
+          bic0 <- res.bic[p + 1, q + 1] # BIC の最小値を更新
+        }
+      } else { # 最適化が収束しない場合
+        res.aic[p + 1, q + 1] <- NA # 欠損値
+        res.bic[p + 1, q + 1] <- NA # 欠損値
+      }
+    }
+  }
+
+  res.aic <- cbind(0:Lp, res.aic) # AR 次数を追加
+  colnames(res.aic) <- c("p ＼ q", 0:Lq) # AIC の列名
+  res.bic <- cbind(0:Lp, res.bic) # AR 次数を追加
+  colnames(res.bic) <- c("p ＼ q", 0:Lq) # BIC の列名
+  rownames(res.order) <- c("AIC", "BIC") # ARMA 次数の行名
+  colnames(res.order) <- c("AR", "MA") # ARMA 次数の列名
+
+  return(list(AIC = res.aic, BIC = res.bic, order = res.order))
+}
+```
+
+出力例
+
+```{r}
+Lp <- Lq <- p + 3 # AR 最大次数, MA 最大次数
+ic.arma(x, Lp, Lq)
+```
+
+# データの概要
+
+産業総合指数を用いて分析例を示す.
+
+## データの入手と編集
+
+FRED (Federal Reserve Economic Data) から 産業総合指数 (Production of Total Industry in Japan) を入手する. 
+
+- https://fred.stlouisfed.org/series/JPNPROINDMISMEI
+
+- 1960 年 1 月 ～ 2022 年 2 月の月次データ
+
+- 基準は 2015 年
+
+- 季節調整済
+
+```{r}
+getSymbols("JPNPROINDMISMEI", src = 'FRED') # データを取得し JPNPROINDMISMEI に代入
+PTI0 <- to.monthly(JPNPROINDMISMEI, OHLC = F) # 日付を月に変更
+head(PTI0, 5) # 最初の 5 個を表示
+tail(PTI0, 5) # 最後の 5 個を表示
+```
+
+産業総合指数の時系列をプロットする.
+
+```{r}
+# 時系列プロット
+plot(PTI0, # 標本
+     main = "Production of Total Industry in Japan") # 図題
+```
+
+1990 年以降にデータの性質が変化したと考え, ここでは 1990 年以降を用いる.
+
+- 1990 年 1 月 ～ 2020 年 12 月の観測値を用いてモデルを構築
+
+- 2021 年 1 月 ～ 2021 年 12 月を予測し, 観測値と比較
+
+```{r}
+PTI0 <- PTI0['1990-01::2021-12'] # 1990 年 1 月 ～ 2021 年 12 月
+PTI <- PTI0['::2020-12'] # 2020 年 12 月以前
+pti0 <- ts(PTI0, frequency = 12, start = c(1990, 1)) # 予測プロットの為に形式を変更
+pti <- ts(PTI, frequency = 12, start = c(1990, 1)) # 予測プロットの為に形式を変更
+```
+
+## 時系列プロット
+
+観測値として用いる産業総合指数の時系列をプロットする.
+
+```{r}
+# 時系列プロット
+plot(pti, # 標本
+     main = "Production of Total Industry in Japan", # 図題
+     ylab = "") # y 軸のラベル 
+```
+
+## 記述統計量
+
+記述統計量は次である.
+
+```{r}
+stargazer(pti, # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+# モデル
+
+## 自己相関
+
+まず, 自己相関関数, 偏自己相関関数をプロットする.
+
+```{r fig.width = 9}
+par(mfrow = c(1, 2)) # プロット画面を 1 行 2 列に分割
+# 自己相関関数
+acf(pti, # 標本
+    main = "Production of Total Industry in Japan") # 図題
+# 偏自己相関関数
+pacf(pti, # 標本
+    main = "Production of Total Industry in Japan") # 図題
+```
+
+自己相関関数と偏自己相関関数より, 自己相関があると判断できる.
+
+```{r}
+(T <- length(pti)) # 標本数
+(m <- round(log(T))) # ラグ m の目安
+```
+
+上記で作成した関数を用いて, ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+fitdf <- 0 # 自由度の減数
+res.port <- sapply(lag, port, x = pti, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port), # 転置
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$ 値"), # 列名
+             caption = "産業総合指数に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+全てにおいて $p$ 値が $0.01$ より小さいので, 有意水準 $1 \%$ で帰無仮説を棄却できる. つまり, 自己相関があると判断できる.
+
+## モデルの決定
+
+自己相関関数 (ACF) と偏自己相関関数 (PACF) より, 時系列モデルを決定する. まず, ACF と PACF は減衰しているので定常過程と判断する (厳密には定常性の検定を行う必要がある). 次に, ACF に切断がないので MA モデルは適切でない. PACF に切断があると考えると AR モデルが妥当であり, 次数は $1$, $2$, $3$ などが候補となる. ここでは, より一般的に ARMA モデルを用いて分析を行う.
+
+# 推定
+
+パッケージ forecast の関数 auto.arima により計算可能であるが, ここでは用いない.
+
+## 次数の決定
+
+上記で作成した関数を用いて, ARMA モデルの次数を決定する.
+
+```{r warning = FALSE}
+Lp <- Lq <- 4 # 最大次数
+res.ic <- ic.arma(pti, Lp, Lq) # 情報量規準を計算
+
+# AIC の表を作成
+knitr::kable(res.ic$AIC, # AIC
+             digits = c(0, rep(3, Lq + 1)), # 少数点以下の最大表示桁数
+             col.names =  c("$p$ $\\backslash$ $q$", 0:Lq), # 列名
+             caption = "産業総合指数に対する ARMA($p, q$) の AIC") # 表題
+
+# BIC の表を作成
+knitr::kable(res.ic$BIC, # BIC
+             digits = c(0, rep(3, Lq + 1)), # 少数点以下の最大表示桁数
+             col.names =  c("$p$ $\\backslash$ $q$", 0:Lq), # 列名
+             caption = "産業総合指数に対する ARMA($p, q$) の BIC") # 表題
+
+# ARMA 次数の表を作成
+knitr::kable(res.ic$order, # ARMA 次数
+             caption = "産業総合指数に対する ARMA($p, q$) の 次数") # 表題
+```
+
+AIC では, ARMA$(`r res.ic$order[1,]`)$, BIC では, ARMA$(`r res.ic$order[2,]`)$ が選択される.
+
+**補足**
+
+情報量基準では値の順序 (大小) のみが重要である. ソフトウェアにより値が大きく異なる場合があるが, 順序や結論は同じである (最適化の方法により少し異なる場合もある). 大きく異なる理由は次の 2 点が考えられる.
+
+- 標本数で割っている
+
+- 定数項を除いている
+
+## パラメータの推定
+
+AIC では ARMA$(`r res.ic$order[1,]`)$, BIC では ARMA$(`r res.ic$order[2,]`)$ が選択され, 結果が異なるので両方用いて推定を行う.
+
+**Model 1: ARMA$(`r res.ic$order[2,]`)$**
+
+ARMA$(`r res.ic$order[2,]`)$ の推定結果は次である.
+
+```{r}
+order.bic <- append(res.ic$order[2,], 0, after = 1) # BIC により選択された次数
+M1 <- arima(pti, # 標本
+            order = order.bic, # 次数
+            method = "ML") # 最尤法
+M1 # 推定結果
+```
+
+intercept は定数項 $c$ ではなく平均 $\mu$ である. 結果は省略して表示されている. 詳細はヘルプをご覧下さい.
+
+**Model 2: ARMA$(`r res.ic$order[1,]`)$**
+
+ARMA$(`r res.ic$order[1,]`)$ の推定結果は次である.
+
+```{r}
+order.aic <- append(res.ic$order[1,], 0, after = 1) # AIC により選択された次数
+M2 <- arima(pti, # 標本
+            order = order.aic, # 次数
+            method = "ML") # 最尤法
+M2 # 推定結果
+```
+
+係数の有意性について考える. $p$ 値を計算するために, パッケージ lmtest にある関数 coeftest を用いる.
+
+**Model 1: ARMA$(`r res.ic$order[2,]`)$**
+
+ARMA$(`r res.ic$order[2,]`)$ の結果は次である.
+
+```{r}
+coeftest(M1) # 係数の p 値
+```
+
+係数と定数項 (平均) は全て有意水準 $5 \%$ で有意である.
+
+**Model 2: ARMA$(`r res.ic$order[1,]`)$**
+
+ARMA$(`r res.ic$order[1,]`)$ の結果は次である.
+
+```{r}
+coeftest(M2) # 係数の p 値
+```
+
+係数 (ar1, ar3) と定数項 (平均) は有意水準 $5 \%$ で有意である.
+
+**Model 2': ARMA$(`r res.ic$order[2,]`)$**
+
+Model 2 において, 有意水準 $5 \%$ で有意でない係数 (ar2) を $0$ として推定する.
+
+```{r}
+M2p <- arima(pti, # 標本
+            order = order.aic, # 次数
+            fixed = c(NA, 0, NA, NA), # 係数を固定 (NA = 固定しない, 0 = 0 に固定)
+            transform.pars = F, # 変換しない (係数を固定するために必要)
+            method = "ML") # 最尤法
+coeftest(M2p) # 係数の p 値
+```
+
+係数と定数項 (平均) は全て有意水準 $1 \%$ で有意である.
+
+## モデル診断
+
+残差の自己相関を調べ, モデルが妥当かどうかを診断する. まずは, 残差を取り出す.
+
+```{r}
+r1 <- residuals(M1) # Model 1 の残差
+r2 <- residuals(M2) # Model 2 の残差
+r2p <- residuals(M2p) # Model 2' の残差
+```
+
+原系列と残差の自己相関関数をプロットする.
+
+```{r fig.height = 6, fig.width = 9}
+par(mfrow = c(2, 2)) # プロット画面を 2 行 2 列に分割
+acf(pti); acf(r1) # 原系列; Model 1 の残差
+acf(r2); acf(r2p) # Model 2 の残差; Model 2' の残差
+```
+
+原系列と残差の偏自己相関関数をプロットする.
+
+```{r fig.height = 6, fig.width = 9}
+par(mfrow = c(2, 2)) # プロット画面を 2 行 2 列に分割
+pacf(pti); pacf(r1) # 原系列; Model 1 の残差
+pacf(r2); pacf(r2p) # Model 2 の残差; Model 2' の残差
+```
+
+自己相関関数と偏自己相関関数より, Model 1 の残差に自己相関があると想定される.
+
+かばん検定を行う. 残差に対する検定であるから自由度が減少する.
+
+```{r}
+fitdf <- 2 # 自由度の減数
+lag <- 1:(2 * m) + fitdf # ラグ (1, ..., 2m) + fitdf
+res.port1 <- sapply(lag, port, x = r1, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port1), # 転置
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$ 値"), # 列名
+             caption = "Model 1 の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+自由度 $4$ 以下において $p$ 値が $0.05$ より小さいので, 有意水準 $5 \%$ で帰無仮説を棄却できる. つまり, 残差に自己相関があると判断できるので, Model 1 は適切でない.
+
+```{r}
+fitdf <- 3 # 自由度の減数
+lag <- 1:(2 * m) + fitdf # ラグ (1, ..., 2m) + fitdf
+res.port2 <- sapply(lag, port, x = r2, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port2), # 転置
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$ 値"), # 列名
+             caption = "Model 2 の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+```{r}
+fitdf <- 2 # 自由度の減数
+lag <- 1:(2 * m) + fitdf # ラグ (1, ..., 2m) + fitdf
+res.port2p <- sapply(lag, port, x = r2p, fitdf = fitdf) # x と fitdf に対して各 lag の port を計算
+
+# 表を作成
+knitr::kable(t(res.port2p), # 転置
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$ 値"), # 列名
+             caption = "Model 2' の残差に対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+Model 2 と 2' では, 全ての自由度において $p$ 値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 残差に自己相関があると判断できないので, Model 2 と 2' は妥当である. 
+
+上記より, 原系列を $y_{t}$ とすると, 推定されたモデルは次である.
+
+**Model 1: ARMA$(`r res.ic$order[2,]`)$ (参考)**
+
+$$
+\begin{align}
+& x_{t} = y_{t} - `r signif(M1$coef[3], 3)` \\
+& x_{t} = `r signif(M1$coef[1], 3)` x_{t - 1} `r signif(M1$coef[2], 3)` x_{t - 2} + \varepsilon_{t}, \quad \sigma^{2} = `r signif(M1$sigma2, 3)`
+\end{align}
+$$
+
+**Model 2: ARMA$(`r res.ic$order[1,]`)$**
+
+$$
+\begin{align}
+& x_{t} = y_{t} - `r signif(M2$coef[4], 3)` \\
+& x_{t} = `r signif(M2$coef[1], 3)` x_{t - 1} + `r signif(M2$coef[2], 3)` x_{t - 2} `r signif(M2$coef[3], 3)` x_{t - 3} + \varepsilon_{t}, \quad \sigma^{2} = `r signif(M2$sigma2, 3)`
+\end{align}
+$$
+
+**Model 2': ARMA$(`r res.ic$order[1,]`)$**
+
+$$
+\begin{align}
+& x_{t} = y_{t} - `r signif(M2p$coef[4], 3)` \\
+& x_{t} = `r signif(M2p$coef[1], 3)` x_{t - 1} `r signif(M2p$coef[3], 3)` x_{t - 3} + \varepsilon_{t}, \quad \sigma^{2} = `r signif(M2p$sigma2, 3)`
+\end{align}
+$$
+
+# 予測
+
+パッケージ forecast を用いて予測を行う. モデル診断の結果より, Model 2 と 2' は妥当である. 比較の為, Model 1 も含めて $12$ 期先予測を行う.
+
+```{r}
+n.ahead <- 12 # 期先
+f1 <- forecast(M1, h = n.ahead) # Model 1 を用いた予測
+f2 <- forecast(M2, h = n.ahead) # Model 2 を用いた予測
+f2p <- forecast(M2p, h = n.ahead) # Model 2' を用いた予測
+```
+
+予測値と観測値を重ねてプロットする. 図を重ねる場合は, $y$ 軸の範囲を合わせる必要がある.
+
+```{r}
+range(pti) # 値域
+ylim <- c(75, 125) # y 軸の範囲
+plot(f1, # 予測値
+     ylim = ylim, # y 軸の範囲
+     main = "Forecast from Model 1") # 図題
+par(new = T) # プロットを重ねる
+plot(pti0, # 観測値
+     ylim = ylim) # y 軸の範囲
+```
+
+```{r}
+plot(f2, # 予測値
+     ylim = ylim, # y 軸の範囲
+     main = "Forecast from Model 2") # 図題
+par(new = T) # プロットを重ねる
+plot(pti0, # 観測値
+     ylim = ylim) # y 軸の範囲
+```
+
+```{r}
+plot(f2p, # 予測値
+     ylim = ylim, # y 軸の範囲
+     main = "Forecast from Model 2'") # 図題
+par(new = T) # プロットを重ねる
+plot(pti0, # 観測値
+     ylim = ylim) # y 軸の範囲
+```
+
+予測値と観測値の差の 2 乗の平均は次である.
+
+```{r}
+pti1 <- window(pti0, c(2021, 1), c(2021, 12)) # 予測部分の観測値
+mean((f1$mean - pti1)^2) # Model 1
+mean((f2$mean - pti1)^2) # Model 2
+mean((f2p$mean - pti1)^2) # Model 2'
+```
+
+予測値と観測値の差の 2 乗の平均を基準とすると, モデル診断において適切でないと判断された Model 1 が最小となるが, この結果に信頼性はない.  この規準では Model 2' が最も適切である.
+
+予測の信頼区間の幅は次である.
+
+```{r}
+f2.w <- (f2$upper - f2$lower)[,2] # Model 2 の 95% 信頼区間の幅
+f2p.w <- (f2p$upper - f2p$lower)[,2] # Model 2' の 95% 信頼区間の幅
+f2.w / f2p.w # 信頼区間の幅の比率
+```
+
+全て $1$ より小さいので, 信頼区間の幅は Model 2 の方が小さい. 一般的に, 信頼区間の幅が最も小さい予測が最適であるから, AIC により次数を決定し, 係数の有意性を考慮しない Model 2 が最適となる.

@@ -1,0 +1,245 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Finite Population Correction},
+  pdfauthor={Jake Underland},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\title{Finite Population Correction}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Numerical Statistics Fall, 2021}
+\author{Jake Underland}
+\date{2021-10-01}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\hypertarget{lesson}{%
+\section{Lesson}\label{lesson}}
+
+Let \(\Pi = \{ x_1, x_2, \dots, x_N\}\) be a finite population of size
+\(N\), and suppose we want to estimate an unknown population mean.
+
+\hypertarget{the-population-mean}{%
+\subsection{The Population Mean}\label{the-population-mean}}
+
+\[\mu = \frac{1}{N} \sum^N_{i=1} X_i \]
+
+\hypertarget{sample-mean-with-replacement}{%
+\subsection{Sample Mean With
+Replacement}\label{sample-mean-with-replacement}}
+
+Draw a sample of size \(n\) from the above population
+(\(\{X_1, X_2, \dots, X_n\}, \:2 \leq n \leq N\)). Then, the sample mean
+is \[\bar{X} = \frac{1}{n}\sum_{i=1}^n X_i\] This is unbiased.
+\[E(\bar{X}) = E(\frac{1}{n}\sum_{i=1}^n X_i) = \underbrace{ \frac{1}{n}\sum_{i=1}^n E(X_i)}_{Linearity} =  \frac{1}{n}\sum_{i=1}^n \mu = \mu\]
+The above holds because under replacement, because \[\begin{aligned} 
+P(\underbrace{X_j}_{sample} = \underbrace{x_i}_{population}) &= \frac{1}{N}\;\; \begin{cases} j = 1, 2, \dots, n \\ i = 1, 2, \dots, N \end{cases} \\
+P(X_i = x_k, X_j = x_l) &= \frac{1}{N^2} \dots \color{red}{!!!}\\
+\implies E(X_j) &= \sum_{i=1}^{N}x_iP(X_j=x_i) \\
+&= \sum_{i=1}^{N}x_i\frac{1}{N} \\
+&= \frac{1}{N} \sum^N_{i=1} X_i \\
+&= \mu \dots \text{by definition}
+\end{aligned}\] However, we know this is unbiased regardless of whether
+you \emph{sample with or without replacement}.
+
+\hypertarget{sample-mean-without-replacement}{%
+\subsection{Sample Mean Without
+Replacement}\label{sample-mean-without-replacement}}
+
+In case of replacement, \[\begin{aligned} 
+P(X_j = x_i) &= \frac{1}{N}\;\; \begin{cases} j = 1, 2, \dots, n \\ i = 1, 2, \dots, N \end{cases} \\
+P(X_i = x_k, X_j = x_l) &= \begin{cases} 
+\frac{1}N(\frac{1}{N-1}) &\dots (k\ne l) \\
+0 &\dots (k =l)
+\end{cases} \dots \color{red}{!!!}\\
+\implies E(X_j) &= \sum_{i=1}^{N}x_iP(X_j=x_i) \\
+&= \sum_{i=1}^{N}x_i\frac{1}{N} \\
+&= \frac{1}{N} \sum^N_{i=1} X_i \\
+&= \mu \dots \text{by definition}
+\end{aligned}\] Because while the joint marginal probability changes
+from the case with replacement, the marginal probability does not,
+meaning the same proof holds for unbiasedness of the sample mean in the
+case of no replacement.\\
+Why does the marginal probability not change? Think of this case
+\(\downarrow\) \[\begin{aligned} 
+P(X_3 = a) &= P(X_1 \ne a \cap X_2 \ne a \cap X_3 = a) \\
+&= \underbrace{\frac{N-1}{N}}_\text{remove \(a\)} \cdot  \underbrace{\frac{N-2}{N-1}}_\text{remove \(a\) and \(X_1\)} \cdot \underbrace{\frac{1}{N-2}}_\text{remove \(X_1, X_2\)} \\
+&= \frac{1}{N}
+\end{aligned}\]
+
+\hypertarget{the-population-variance}{%
+\subsection{The Population Variance}\label{the-population-variance}}
+
+\[\sigma_2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2\]
+
+\hypertarget{the-sample-variance-with-replacement}{%
+\subsection{The Sample Variance With
+Replacement}\label{the-sample-variance-with-replacement}}
+
+\[Var(X_j) = \sigma ^2\] Proof:
+\[\begin{aligned} Var(X_j) &= E[(X_j - E(X_j))^2] \\
+&= E[(X_j - \mu)^2] \\
+&= \sum^{N}_{i=1}(x_i - \mu)^2 P(X_j = x_i) \\
+&= \sum^{N}_{i=1}(x_i - \mu)^2 \frac{1}{N} \\
+&= \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2 \\
+&= \sigma^2 \; \Box
+\end{aligned}\]
+
+\hypertarget{variance-of-sample-mean-with-replacement}{%
+\subsection{Variance of Sample Mean With
+Replacement}\label{variance-of-sample-mean-with-replacement}}
+
+\[Var(\bar{X}) = \frac{\sigma^2}{n}\] Proof.
+
+\[\begin{aligned} 
+Var(\bar{X}) &= Var(\frac{1}{n}\sum_{i=1}^n X_i) \\
+&=\frac{1}{n^2}\sum_{i=1}^nVar(X_i) \dots \color{blue}{Independence} \\
+&= \frac{1}{n^2}\sum_{i=1}^n  \sigma^2 \\
+&= \frac{\sigma^2}{n} \dots\Box
+\end{aligned}\]
+
+\hypertarget{variance-of-sample-mean-without-replacement}{%
+\subsection{Variance of Sample Mean Without
+Replacement}\label{variance-of-sample-mean-without-replacement}}
+
+First, we start with covariance.
+\[Cov(X_i, X_j) = -\frac{\sigma^2}{N-1}\;\;(i\ne j)\] Proof.
+\[\begin{aligned}
+Cov(X_i, X_j) &= E[(X_i - E[X_i])(X_j - E[X_j])] \\
+&= E[(X_i - \mu)(X_j - \mu)] \\
+&= \sum_{i=1, j=1}^{N}(X_i - \mu)(X_j - \mu) \\
+&= \sum_{k = l, k \ne l}^{N}(x_k - \mu)(x_l - \mu)\underbrace{P(X_i = x_k, X_j = x_l)}_\text{\(=0\) when \(k = l\)} \\
+&= \sum_{k \ne l}^{N}(x_k - \mu)(x_l - \mu)\frac{1}{N}(\frac{1}{N-1}) \\
+&= \frac{1}{N(N-1)}\sum_{k \ne l}^{N}(x_k - \mu)(x_l - \mu) 
+\end{aligned}\] We know that \[\begin{aligned}
+\{\sum_{i=1}^N(x_i-\mu)\}^2 &= 0 \\
+\implies \sum_{i=1}^{N}(x_i-\mu)^2 + \sum_{k\ne l}(x_k-\mu)(x_l-\mu)&= 0 \\
+\implies \sum_{k\ne l}(x_k-\mu)(x_l-\mu) &= -  \sum_{i=1}^{N}(x_i-\mu)^2 \\
+&= -N\sigma^2 
+\end{aligned}\] Thus, \[\begin{aligned}
+Cov(X_i, X_j)
+&= \frac{1}{N(N-1)}\sum_{k \ne l}^{N}(x_k - \mu)(x_l - \mu) \\
+&= \frac{1}{N(N-1)} (-N\sigma^2) \\
+&= -\frac{\sigma^2}{N-1} \dots \Box
+\end{aligned}\] Using this, we find that
+\[Var(\bar{X}) = \frac{\sigma^2}{n}(\frac{N-n}{N-1})\] Proof.
+\[\begin{aligned} 
+Var(\bar{X}) &= Var(\frac{1}{n}\sum_{i=1}^n X_i) \\
+&=\frac{1}{n^2}Var(\sum_{i=1}^n X_i) \\
+&= \frac{1}{n^2}\sum_{i=1}^nVar(X_i) + \frac{1}{n^2}\sum_{i\ne j}Cov(X_i, X_j) \\
+&= \frac{\sigma^2}{n} + \frac{n-1}{n}(-\frac{\sigma^2}{N-1})\\
+&= \frac{\sigma^2}{n}(1 - \frac{n-1}{N-1})\\
+&= \frac{\sigma^2}{n}\underline{(\frac{N-n}{N-1})}_{\dots\text{Finite Population Correction Factor}} \Box
+\end{aligned}\]
+
+\hypertarget{notes-on-the-finite-population-correction-factor}{%
+\subsection{Notes on the Finite Population Correction
+Factor}\label{notes-on-the-finite-population-correction-factor}}
+
+We call the constant \(FPC = \sqrt{\frac{N-n}{N-1}}\) the finite
+population correction factor.\\
+We can use the FPC to construct confidence intervals for means or
+proportions when sampling from a finite population without
+replacement.\\
+The confidence interval for \(\mu\) is given by:
+\[\bar{X} \pm 1.96\frac{\sigma}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}\] Proof.
+\[\begin{aligned}
+&\frac{\bar{X} - E(\bar{X})}{\sqrt{Var(\bar{X})}}\sim N(0, 1) \\
+\implies &P(-1.96 < \frac{\bar{X} - E(\bar{X})}{\sqrt{Var(\bar{X})}} < 1.96) = 0.95 \\
+\implies &P(-1.96 < \frac{\bar{X} - \mu}{\sqrt{\frac{\sigma^2}{n}(\frac{N-n}{N-1})}} < 1.96) = 0.95 \\
+\implies &P(\bar{X} - 1.96\frac{\sigma}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}} < \mu < \bar{X} + 1.96\frac{\sigma}{\sqrt{n}}\sqrt{\frac{N-n}{N-1}}) = 0.95 \dots \Box
+\end{aligned}\] When sampling is with replacement,
+\(Var_{(1)}(\bar{X}) = \frac{\sigma^2}{n}\). When without replacement,
+\(Var_{(2)}(\bar{X}) = \frac{\sigma^2}{n}(\frac{N-n}{N-1})\).
+\[Var_{(1)}(\bar{X}) = \frac{\sigma^2}{n} > \frac{\sigma^2}{n}(\frac{N-n}{N-1}) = Var_{(2)}(\bar{X})\dots \text{because }(n > 1)\]
+From here we see that using the sample mean to estimate \(\mu\) when
+drawing from a finite population without replacement has higher accuracy
+than doing so with replacement. However, the difference is negligible
+the higher the cardinality of population \(N\) and the lower the sample
+size \(n\).
+
+\newpage
+
+\hypertarget{exercises}{%
+\section{Exercises}\label{exercises}}
+
+\hypertarget{exercise-01}{%
+\subsubsection{Exercise 01}\label{exercise-01}}
+
+Solve a linear equation \(\sum_{i=1}^{n}(x_i-c) = 0\) for \(c\), and
+verify that its solution is the arithmetic mean \(\bar{x}\).
+
+\textit{Solution.} \[\begin{aligned}
+\sum_{i=1}^{n}(x_i-c) &= 0 \\
+\implies \sum_{i=1}^{n}x_i &= nc \\
+\implies c &= \frac{1}{n}\sum_{i=1}^{n}x_i = \bar{x}
+\end{aligned}\]
+
+\end{document}

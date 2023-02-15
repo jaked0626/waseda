@@ -1,0 +1,153 @@
+---
+title: "Chi-squared and t-distributions"
+subtitle: "Numerical Statistics Fall, 2021"
+author: "Jake Underland"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    toc: true
+    toc_depth: 3
+    extra_dependencies: ["amsmath", "xcolor"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# The Chi-squared Distribution  
+
+Let 
+$$Z_1, Z_2, \dots, Z_n \stackrel{i.i.d.}{\sim}N(0, 1)$$
+Then, 
+$$Y = Z_1^2 + Z_2^2 + \dots + Z_n^2 \sim \chi_n^2$$  
+
+## Expectation  
+
+First, 
+$$Var(Z) = E(Z^2) - E(Z)^2 = E(Z^2) - 0 = 1\implies E(Z^2) = 1$$
+Then, 
+$$\begin{aligned}
+E(Y) &= E(\sum_i^n Z_i^2) \\
+&= \sum_i^n E(Z_i^2) \\
+&= \sum_i^n 1 \\
+&= n
+\end{aligned}$$
+
+
+## Variance  
+
+
+$$\begin{aligned}
+Var(Y) &= \sum_i Var(Z_i^2) \dots Independence \\
+Var(Z_i^2) &= E(Z^4) - E(z^2)^2 \\
+&= E(Z^4) - 1^2 \\
+\Gamma(z) &= \int^\infty_0x^{z-1}e^{-x}dx; \; \Gamma(z+1) = z\Gamma(z) \\
+\Gamma(s)\Gamma(1-s) &= \frac{\pi}{\sin \pi s} 
+\implies \Gamma(\frac{1}{2})\Gamma(1-\frac{1}{2}) = \frac{\pi}{\sin\frac{\pi}{2}} 
+\implies \Gamma(\frac{1}{2})^2 = \pi 
+\implies \Gamma(\frac{1}{2}) = \sqrt{\pi} \\
+E(Z^4) &= \int _{-\infty}^{\infty}z^4 \frac{1}{\sqrt{2\pi}}\exp(-\frac{z^2}{2})dz \\
+&= \frac{2}{\sqrt{2\pi}}\int _{0}^{\infty}z^4 \exp(-\frac{z^2}{2})dz \mid _{u-sub\; u = z^2/2} \\
+&= \frac{2}{\sqrt{2\pi}}\cdot 2\sqrt{2}\int^\infty_0 u^{\frac{3}{2}}e^{-u}du \\
+&= \frac{4}{\sqrt{\pi}}\int^\infty_0 u^{\frac{3}{2}}e^{-u}du \\
+&= \frac{4}{\sqrt{\pi}}\Gamma(\frac{5}{2}) \\
+&= \frac{4}{\sqrt{\pi}}\cdot\underbrace{\frac{3}{2}\cdot\frac{1}{2}\cdot\Gamma(\frac{1}{2})}_\text{recursiveness of \(\Gamma()\)} \\
+&= \frac{4}{\sqrt{\pi}}\cdot\frac{3}{2}\cdot\frac{1}{2}\cdot\Gamma(\frac{1}{2})\\
+&= \frac{4}{\sqrt{\pi}}\cdot\frac{3}{2}\cdot\frac{1}{2}\cdot\sqrt{\pi}\\
+&= 3\\
+\implies Var(Y) &= \sum_i Var(Z_i^2) \\
+&= \sum_i \left( E(Z^4) - 1 \right) \\
+&= \sum_i (3 - 1) \\
+&= \sum_i 2 \\
+&= 2n\dots \Box
+\end{aligned}$$
+
+## Sampling Distribution of Variances  
+
+Let 
+$$X_1, X_2, \dots, X_n \stackrel{iid}{\sim} N(\mu, \sigma^2)$$
+Then, 
+$$\sum_i \left(\frac{X_i - \mu}{\sigma}\right)^2 = \sum_i Z_i^2 \sim \chi^2_n$$
+\boldmath \[\iff \frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \mu)^2 \sim \chi^2_n\] \unboldmath
+
+Now, 
+\[\begin{aligned}
+\frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \mu)^2&= \frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \bar{X} + \bar{X} - \mu)^2 \\
+&= \frac{1}{\sigma^2}\left[\sum_{i=1}^n (X_i - \bar{X}) + n(\bar{X} - \mu)^2 \right] \\
+&= \frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \bar{X}) + \left(\frac{\bar{X} - \mu}{\frac{\sigma}{\sqrt{n}}}\right)^2  
+\end{aligned}\]
+Where 
+\[\begin{aligned}
+&\frac{\bar{X} - \mu}{\frac{\sigma}{\sqrt{n}}} \sim N(0, 1) \\
+\implies&\left(\frac{\bar{X} - \mu}{\frac{\sigma}{\sqrt{n}}}\right)^2 \sim \chi ^2 _1
+\end{aligned}\]
+Thus, following from the independence of $\bar{X} \text{ and } \sum_{i=1}^n(X_i - \bar{X})^2$, proven in lectures for STAT 245, we have 
+\[\begin{aligned}
+\underbrace{\frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \mu)^2}_{\sim \chi^2_n}
+&= \frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \bar{X}) + \underbrace{\left(\frac{\bar{X} - \mu}{\frac{\sigma}{\sqrt{n}}}\right)^2}_{\sim \chi ^2 _1} 
+\end{aligned}\]
+\boldmath \[\implies \frac{1}{\sigma^2}\sum_{i=1}^n (X_i - \bar{X}) \sim \chi^2_{n-1}\]\unboldmath
+Additionally, 
+\[\hat{S}^2 = \frac{1}{n-1}\sum_i^n(X_i - \bar{X})^2\implies \frac{(n-1)\hat{S}^2}{\sigma^2} \sim \chi ^2 _{n-1}\]
+
+# t-distribution  
+
+## Definition  
+Let $$Y \sim \chi ^2 _n; \; Z \sim N(0, 1); \; Y \perp \!\!\! \perp Z$$
+Then, 
+$$\frac{\sqrt{n}Z}{\sqrt{Y}}\sim t_n$$
+
+## Sampling with unknown population variance  
+
+Let $$ X_1, \dots, X_n \stackrel{iid}{\sim}N(\mu, \sigma^2)$$
+Then, 
+$$\frac{\bar{X} - \mu}{\frac{\sigma}{\sqrt{n}}} \sim N(0, 1)$$
+Let $\hat{S} = \sqrt{\hat{S}^2} = \sqrt{\frac{1}{n-1}\sum_{i=1}^n(X_i - \bar{X})^2}$  
+Then, from the definition of the $t$ distribution, 
+\boldmath $$T= \frac{\sqrt{n}(\bar{X} - \mu)}{\hat{S}} \sim t_{n-1}$$\unboldmath
+
+## Expectation  
+Let $T \sim t_m$:
+$$E(T) = 0$$
+
+## Variance  
+$$Var(T) = \frac{m}{m-2} \dots (m > 2)$$
+
+## Relation to Normal  
+
+From Chebyshev's inequality, we have $\forall \epsilon > 0$
+\[\begin{aligned}
+P(|\hat{S}^2 - \sigma^2| > \epsilon) \le \frac{Var(\hat{S}^2)}{\epsilon^2} = \frac{1}{\epsilon^2} \cdot \frac{2\sigma^4}{n-1}  \to 0 \;\;(n \to \infty)
+\end{aligned}\]
+Where 
+\[\begin{aligned}
+Var\left(\frac{(n-1)\hat{S}^2}{\sigma^2}\right) &= 2(n-1) \\
+\frac{(n-1)^2}{\sigma^4}Var(\hat{S}^2) &= 2(n-1) \\
+\implies Var(\hat{S}^2) &= \frac{2\sigma^4}{(n-1)}
+\end{aligned}\]
+This means that $\hat{S}^2 \stackrel{p}{\to} \sigma^2$ (consistent), and as $n\to \infty$, 
+$$\frac{\sqrt{n}(\bar{X} - \mu)}{\hat{S}} \to \frac{\sqrt{n}(\bar{X} - \mu)}{\sigma} \sim N(0, 1)$$
+
+# Median  
+
+When the size of a data is odd ($n = 2m+1$ where $m \in \mathbb{N}$), then the median of the data is 
+$$\arg\min_c f(c) = \sum_{i=1}^n |x_i - c|$$
+
+
+
+
+
+
+
+

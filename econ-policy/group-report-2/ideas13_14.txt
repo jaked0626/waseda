@@ -1,0 +1,85 @@
+
+
+
+正しい: (生産を伴わない）交換取引の市場は、財を渡す側を供給側、受け取る側を需要側とし、供給側の主体の限界便益曲線を反転させたものを限界費用とみなすことで、生産を伴う市場と同様の分析ができる。
+
+誤り：生産を伴わない財を取引する場では，財を供給する側にはコストが存在しないため，供給曲線は0で水平になり，合理的経済人であれば0より僅かでも大きい価格を提示されればそれがなんであろうと交換を承諾する．価格が0で取引されないのは，競合してその財を得ようとする需要者が複数いるからであり，オークションと同じ原理で取引値が決定する．
+
+正しい：保険により，Bad State で提供される insurance coverage は，Good state で払う premium より価値が高い（Bad State では貧しくなるので同じ金額でもより助かる)ので, 保険購入者は実際にもらえる保障額よりも高い保険料を支払うインセンティブがある．
+
+誤り：保険取引では，保険購入者は実際に生じうる金銭的不利益の期待値までしか保険料を払いたがらない．
+
+正しい：情報の非対称性が存在する財であっても，取引に参加する主体がいずれもリスク中立的（金銭損得の期待値をそのまま効用として動く）でかつ流動性制約がない（提供できるインセンティブに制限がない）場合にはインセンティブ契約で非効率性は回避できる（労働市場，成果主義により労働中の手抜きを阻止）．
+
+誤り：保険市場で財の取引を効率的にし，逆選択を防ぐためにはリスク中立的な人間にのみ保険を売ればいい．
+そもそも，保険を買おうと思うものはリスク中立的ではない．真にリスク中立的な人間は保険をactuarially freeでなければ買わない．また，保険会社はインセンティブとして病気したらお金をあげないをできず（流動性制約)，また病気しなければやすくする（保険料減らす）をやったらそもそもリスク中立的なものしか集まっていないので保険料はactuarially freeを下回り保険会社が損をする．
+
+
+誤り：
+医療保険の会社が契約時に契約者の健康状態を（人間ドックの結果，サーベイ調査等によって）高い精度で把握することができれば，保険取引市場での情報の非対称性が解消され，保険取引が効率的なものとなる．
+→たとえそうしたとしても，モラルハザードの問題が残る．保険会社は契約者の健康状態を把握するために大きなコストを割いているので，これを継続的に行うのは現実的じゃない（直ちに判断できない）．そのため，モラルハザードの問題が残る．
+
+
+Suppose that the insurance company offered two policies: full coverage for the $30,000 of medical costs associated with accidents,at $1,500 (the actuarially fair price for the careless), and coverage of up to $10,000 of medical expenses, at a price of $50 (the actuarially fair price for that level of coverage for the careful). If these two products were offered, it is possible that the careless would purchase the more expensive coverage and the careful would purchase the less expensive coverage.This outcome occurs because the careless don’t want to bear the risk of having only $10,000 of coverage, given their relatively high odds of having an accident; they would rather pay a high price to make sure they have full coverage.The careful can take that risk, however, because of their very low odds of having an accident. By offering different products at different prices, the insurance company has caused consumers to reveal their true types. This market equilibrium is called a separating equilibrium.
+Sound far-fetched? Consider what happened in health insurance markets 30 years ago. At that time, insurance companies were offering very generous insurance to all consumers at one high price.As health insurance costs began to escalate, however, companies could no longer make profits with this strategy. In response to the higher costs they faced, insurance companies began to offer two products: a traditional insurance plan, and a new product called the health maintenance organization (HMO). HMOs offered care that was much more tightly monitored, typically featuring much less access to medical specialists, for example. But HMOs also had a much lower premium. The result, as we discuss at length in Chapter 15, was a major shift by largely healthy consumers to this new, relatively low-cost/low-benefit option: a classic separating equilibrium.
+Unlike the pooling equilibrium, however, the separating equilibrium still represents a market failure. The careless are getting what they would get in a model of full information: full coverage at a high price, which they are will- ing to pay.The careful are not getting their first choice, however, which would be full coverage at a lower, actuarially fair price.To address this market failure, insurers have forced the careful to choose between full coverage at a very high price and partial coverage at a lower price. Because many of the careful will choose the partial coverage, this is not the optimal solution: the optimum is full coverage for both groups, at different prices that reflect each group’s relative risks of injury. Thus, even with separate products, adverse selection can still impede markets from achieving the efficient outcome.
+
+
+
+いくつか正誤問題の案が浮かんだのでここに置いておきます．
+
+いくつか正誤問題の案が浮かんだのでここに置いておきます．
+
+いくつか正誤問題の案が浮かんだのでここに置いておきます．
+
+1. 生産を伴わない財を取引する場では，財を供給する側にはコストが存在しないため，供給曲線は0で水平になり，合理的経済人であれば0より僅かでも大きい価格を提示されればそれがなんであろうと交換を承諾する．価格が0で取引されないのは，競合してその財を得ようとする需要者が複数いるからであり，オークションと同じ原理で取引値が決定する．
+誤り) (生産を伴わない）交換取引の市場は、財を渡す側を供給側、受け取る側を需要側とし、供給側の主体の限界便益曲線を反転させたものを限界費用とみなすことで、生産を伴う市場と同様の分析ができる。
+
+2. 保険取引では，被保険者が支払う保険料は，同じ被保険者が受け取る保険金の期待値を上回ってはいけない．なぜなら，保険購入者は合理的であるため，自らが受け取るよりも多く払うことが予想される場合には保険を買わないからである．
+誤り）保険は，被保険者にとって不運な事象が起こっている時に金銭を移譲する財である．そのため，リスク回避的な合理的経済人の場合，不運な事象下の金銭は，保険料を支払っている幸運な事象下での金銭よりも価値が高いことが予想される．この場合，保険料が保険金よりも高くても，幸運な事象下での保険料の価値（被保険者が手放すことによって損なう効用）が不運な事象下での保険金の価値（被保険者が受け取ることによって得る効用）以下である限り，この取引は成立する．
+
+
+3. 医療保険市場で財の取引を効率的にし，逆選択を防ぐためにはリスク中立的な人間にのみ保険を売ればいい．
+
+誤り）そもそも，医療保険を買おうと思うものはリスク中立的ではないことが予想される．真にリスク中立的な人間は，保険料が保険金の期待値と等しいかそれ以下でなければ買わない．また，保険会社はそもそも病気時のインセンティブとして，病気をしたら保険金をあげないといった条件を設けることはできない（流動性制約）．また，病気しなければ保険料を減らすというインセンティブを導入すれば，そもそもリスク中立的なものにしか売っていないので，保険料は保険金の期待値を下回り，保険会社が損をする．
+→モラルハザードの観点は？そもそもリスク選好は観察できる？
+
+4. 医療保険の会社が契約時に契約者の健康状態を人間ドックの結果，サーベイ調査等を介して高い精度で把握することができれば，保険取引市場での情報の非対称性が解消され，保険取引が効率的なものとなる．
+
+→たとえそうしたとしても，モラルハザードの問題が残る．保険会社は契約者の健康状態を把握するために大きなコストを割いているので，これを継続的に行うのは現実的じゃない．瞬時に被保険者の健康状態が把握できない以上，モラルハザードの問題が残る．
+
+5. ある保険会社の例を考える．この保険会社は，事故の際に全額を保障する保険Aを高い保険料PAで売っている．不注意な運転をしがちな消費者は，この保険に契約しているが，注意深い運転をする消費者は，保険Aの全額保障という保険内容に魅力を感じているが，保険料PAが高すぎるので契約していない．これに対し，保険会社は新たな保険Bを，安い保険料PBでの提供を始めた．保険Bは事故による損害の半分までしか保障しないが，Aよりかなり安いので，注意深い運転をする消費者はみなBに契約した．この状態の市場は効率的である．
+
+誤り）この場合，注意深い消費者の第一希望はAであるのに，Bに契約しているため，非効率性が生じている．効率的な解決は，Aの保険の内容をかえず，保険料だけ分別することである．実際，このような2つの保険の両立は，Aの保険からBの保険への注意深いタイプの移動を招き，その結果Aに不注意な契約者が集まり，PAが上がり，またAから人が離れるというスパイラルが生じる可能性がある．これを逆選択といい，Aの保険が提供されなくなる理由ともなる．
+
+
+
+
+
+
+
+
+
+
+
+Report idea:
+
+Page 650 of Greuber: motorcycles vs cars in Indonesia, result of taxation. 
+
+For adverse selection:
+[Price and Mays 1985; Scheckler
+and Schulz 1987; Brown et al. 1993; Feldman and Dowd 1993;
+Royalty and Solomon 1995; Riley et al. 1996
+
+
+
+一方で，アメリカ国内の保育所を見ると，クオリティの高いものはあまりにも高価で多くの家庭の手が届かず，一般の家庭の手が届く範囲のものはあまりにも品質が低いという批判を長く受けてきた（NICHD, 1998; First Five Years Fund, 2021). こうした声に応え，コロナ対策案として施行されたAmerican Rescue Planで米国の育児支援給付金であるChild Tax Creditが一時的に拡大され，バイデン政権下でこれが延長されるなどのチャイルドケアへの公的投資が増えてきている．この流れに沿って，現在法案が通過し，予算が協議されているインフラ投資政策"Build Back Better"でも，早期幼児教育への多額な出資が含まれている．
+特に Build Back Better での育児支援政策では，政府はチャイルドケアへの投資を通じて全ての子育て世帯に手頃な価格で申し分のないクオリティの保育所，託児所等へのアクセスを保障したい意図が見える．意図自体は褒むべきものであるが，支援案の詳細がその意図の実現に最適な手法かどうか検討していく．
+
+Build Back Better に含まれる育児支援政策は，およそ2部構成となっている．一つは，6歳以下の子持ち世帯への条件づき金銭援助であり，もう一つは，州政府が保育所の増設，改良といった乳幼児教育投資をするための予算援助である．
+
+
+
+
+
+

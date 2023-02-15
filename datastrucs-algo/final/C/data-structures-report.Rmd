@@ -1,0 +1,362 @@
+---
+title: "Summary of Data Structures"
+author: "Jake Underland (1A193008-2)"
+date: "1/30/2022"
+geometry: "margin=2cm"
+output:
+  pdf_document: 
+    latex_engine: lualatex
+    toc: true
+    toc_depth: 3
+    extra_dependencies: ["amsmath", "color", "hyperref", "luatexja"]
+    keep_tex: yes
+    number_sections: true
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+documentclass: ltjarticle
+header-includes:
+  - \usepackage{graphicx}
+  - \graphicspath{ {images/} }
+  - \usepackage{subfig}
+  - \usepackage{enumitem}
+  - \hypersetup{
+    filecolor=magenta,      
+    urlcolor=cyan,
+    }
+  - \usepackage{forest}
+  - \usepackage{tikz}
+  - \tikzset{
+      heap/.style={
+        every node/.style={circle,draw},
+        level 1/.style={sibling distance=30mm},
+        level 2/.style={sibling distance=10mm}
+      }
+    }
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r echo=FALSE}
+library("reticulate")
+use_python("/Library/anaconda3/lib/python3.8")
+```
+
+
+\begin{abstract} 
+本レポートではkd木，フィボナッチヒープ，AVL木，接尾辞配列の4つのデータ構造について解説していく．
+\end{abstract}
+
+# k-d木  
+$k$-d木とは，二分木の一つであり，全てのノードが$k$次元のユークリッド空間上の点であるものをいう．二分木であるため，全てのノードには2つの子供ノード(左，右）がある．$k$次元の座標空間のいずれかの軸(例:2次元空間の$x$軸)に着目し，根ノードの軸の値と新しく挿入するノードの軸の値を比較して挿入するノードの方が低ければ，根ノードの左部分木に挿入し，高ければ，根ノードの右部分木に挿入する．これを，親から辿っていき全てのノードを部分木とみなして再帰的に行うことで挿入することができる．一般的には，深さが増すごとに基準となる軸を交互に変えていく．これが意味することは，すなわち全ての葉ではないノードは，座標空間を2つの半空間に分割する超平面を作り出しており，そのノードの下に属するノードは2つに仕分けられる．ここまでのロジックを組んだコードをpythonで実装してみたのが以下だ．
+
+```{python eval = FALSE}
+class kdtree(object):
+    def __init__(self, point, axis=0):
+        self.point = point # k次元の座標(tuple)
+        self.k = len(self.point)
+        self.axis = axis % self.k  # 比較する軸をincrement することで交互に入れ替える
+        self.left_child = None
+        self.right_child = None
+        self.children = []
+    
+    def insert(self, point):
+        assert len(point) == self.k
+        if point[self.axis] > self.point[self.axis]:
+            if self.right_child:
+                self.right_child.insert(point)
+            else:
+                self.right_child = kdtree(point, self.axis + 1)
+                self.children.insert(0, self.right_child)
+        else:
+            if self.left_child:
+                self.left_child.insert(point)
+            else:
+                self.left_child = kdtree(point, self.axis + 1)
+                self.children.append(self.left_child)
+```
+これを可視化したのが以下になる．ただし，ターミナルでの可視化の都合上，右の子ノードを上，左の子ノードが下に来るように，木全体を左方向に90度傾けた様子となっている．  
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{kdtree.jpg}
+\end{figure}  
+
+`axis`が参照される座標軸を指し，深度が増すごとに入れ替わっているのが観察できる．また，全てのノードにおいて，その下に属するノードは，指定された座標軸で2つの半空間に分割されていることが見て取れる．  
+  
+kd 木は多次元データを扱う際に有用である．例えば，簡略化のため，下の2次元のkd木に注目する.
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{tree2.jpg}
+\end{figure}  
+
+`(14, 23)` に最も近い（ユークリッド距離が最小な）点を探したいとする．この時,根っこからkd木を辿ってみる．$14 >7$なので，右の（上の）部分木に移る．$23 > 1$なので，また右の部分木に移る．この移動を繰り返すたびに，探索する範囲は狭くなっていき，最終的に直近点の近傍に落ち着き，その範囲内の点を探すことにより直近点を割り出すことができる．このような繰り返した領域のパーテーションがkd木の特徴である．したの図は，2次元空間におけるこのパーテーションの反復を可視化したものだ．  
+
+```{python echo = FALSE, eval = FALSE}
+# Author: Jake VanderPlas
+# License: BSD
+#   The figure produced by this code is published in the textbook
+#   "Statistics, Data Mining, and Machine Learning in Astronomy" (2013)
+#   For more information, see http://astroML.github.com
+#   To report a bug or issue, use the following forum:
+#    https://groups.google.com/forum/#!forum/astroml-general
+import numpy as np
+from matplotlib import pyplot as plt
+
+# We'll create a KDTree class which will recursively subdivide the
+# space into rectangular regions.  Note that this is just an example
+# and shouldn't be used for real computation; instead use the optimized
+# code in scipy.spatial.cKDTree or sklearn.neighbors.BallTree
+class KDTree:
+    """Simple KD tree class"""
+
+    # class initialization function
+    def __init__(self, data, mins, maxs):
+        self.data = np.asarray(data)
+
+        # data should be two-dimensional
+        assert self.data.shape[1] == 2
+
+        if mins is None:
+            mins = data.min(0)
+        if maxs is None:
+            maxs = data.max(0)
+
+        self.mins = np.asarray(mins)
+        self.maxs = np.asarray(maxs)
+        self.sizes = self.maxs - self.mins
+
+        self.child1 = None
+        self.child2 = None
+
+        if len(data) > 1:
+            # sort on the dimension with the largest spread
+            largest_dim = np.argmax(self.sizes)
+            i_sort = np.argsort(self.data[:, largest_dim])
+            self.data[:] = self.data[i_sort, :]
+
+            # find split point
+            N = self.data.shape[0]
+            half_N = int(N / 2)
+            split_point = 0.5 * (self.data[half_N, largest_dim]
+                                 + self.data[half_N - 1, largest_dim])
+
+            # create subnodes
+            mins1 = self.mins.copy()
+            mins1[largest_dim] = split_point
+            maxs2 = self.maxs.copy()
+            maxs2[largest_dim] = split_point
+
+            # Recursively build a KD-tree on each sub-node
+            self.child1 = KDTree(self.data[half_N:], mins1, self.maxs)
+            self.child2 = KDTree(self.data[:half_N], self.mins, maxs2)
+
+    def draw_rectangle(self, ax, depth=None):
+        """Recursively plot a visualization of the KD tree region"""
+        if depth == 0:
+            rect = plt.Rectangle(self.mins, *self.sizes, ec='k', fc='none')
+            ax.add_patch(rect)
+
+        if self.child1 is not None:
+            if depth is None:
+                self.child1.draw_rectangle(ax)
+                self.child2.draw_rectangle(ax)
+            elif depth > 0:
+                self.child1.draw_rectangle(ax, depth - 1)
+                self.child2.draw_rectangle(ax, depth - 1)
+
+
+#------------------------------------------------------------
+# Create a set of structured random points in two dimensions
+np.random.seed(0)
+
+X = np.random.random((30, 2)) * 2 - 1
+X[:, 1] *= 0.1
+X[:, 1] += X[:, 0] ** 2
+
+#------------------------------------------------------------
+# Use our KD Tree class to recursively divide the space
+KDT = KDTree(X, [-1.1, -0.1], [1.1, 1.1])
+
+#------------------------------------------------------------
+# Plot four different levels of the KD tree
+fig = plt.figure(figsize=(5, 5))
+fig.subplots_adjust(wspace=0.1, hspace=0.15,
+                    left=0.1, right=0.9,
+                    bottom=0.05, top=0.9)
+
+for level in range(1, 5):
+    ax = fig.add_subplot(2, 2, level, xticks=[], yticks=[])
+    ax.scatter(X[:, 0], X[:, 1], s=9)
+    KDT.draw_rectangle(ax, depth=level - 1)
+
+    ax.set_xlim(-1.2, 1.2)
+    ax.set_ylim(-0.15, 1.15)
+    ax.set_title('level %i' % level)
+
+# suptitle() adds a title to the entire figure
+fig.suptitle('$k$d partitioning visualization')
+plt.show()
+```
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{partition.jpg}
+\end{figure}  
+
+\newpage
+
+# フィボナッチヒープ  
+
+フィボナッチヒープとは，マージ可能なヒープ構造をしており，以下の操作を行うことができる:
+\begin{itemize}
+\item ヒープ作成：ヒープを作る  
+\item 挿入：ヒープに追加する  
+\item 最小値：ヒープの中の最小値へのポインターをリターンする  
+\item 最小値抽出：ヒープの中の最小値へのポインターをリターンし，最小値をヒープから削除する  
+\item マージ：二つのヒープをマージする  
+\item 要素の下方更新：ヒープのある要素の値を，それ以下の値に更新する  
+\item 削除：ヒープから要素を削除する． 
+\end{itemize}
+  
+フィボナッチヒープの利点としては，これらの操作のうちの多くを定数時間で行うことができることだ．二分ヒープと比較すると以下のようになる． 
+
+||二分ヒープ|フィボナッチヒープ|  
+|---|---|---|  
+|ヒープ作成| $O(1)$| $O(1)$|  
+|挿入| $O(\log n)$| $O(1)$|
+|最小値| $O(1)$| $O(1)$ |
+|最小値抽出| $O(\log n)$ | $O(\log n)$ | 
+|マージ| $O(n)$ | $O(1)$ |
+|要素の下方更新| $O(\log n)$|$O(1)$|
+|削除| $O(\log n)$ | $O(\log n)$ |  
+
+フィボナッチヒープの構造は，最小ヒープの性質（子ノードの方が親ノードより値が大きい）を持った木の集合である．二項ヒープと違い，この集合にの木の形に規定はなく，また同じ形をした木が複数あっても構わない．そのため，木のマージや挿入は，単純に木をつなぎ合わせれば完了する．これがこれらの操作の高速化の理由である．また，要素の下方更新はその要素を独立の木として切り離して行われることもあるため，この操作も高速化される．
+
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[heap]
+  \node {17}
+  child{node{30}
+    child{node{}}
+  }
+  ;
+\end{tikzpicture}
+\begin{tikzpicture}[heap]
+  \node {24}
+  child{node{26}
+    child{node{35}}}
+  child{node{45}}
+  ;
+\end{tikzpicture}
+\begin{tikzpicture}[heap]
+  \node {23}
+    child{node{}
+      child{node{}}
+  }
+  ;
+\end{tikzpicture}
+\begin{tikzpicture}[heap]
+  \node {$3_{min}$}
+  child{node{18}
+    child{node{39}}}
+  child{node{52}}
+  child{node{41}
+    child{node{44}}}
+  ;
+\end{tikzpicture}
+\caption{フィボナッチヒープ（但し空のノードは高さを揃えるためのもの）．}
+\end{figure}
+
+フィボナッチヒープは最小値を示すポインターの情報を保存しており，ヒープ内の全ての木の最小値が連結リスト（双方向循環リスト）によりつながっているため，一つのポインターで全ての木の最小値をアクセスすることができる．図2では描かれていないが，根のノードは全て連結されている．  
+  
+フィボナッチヒープで最も複雑な操作は最小値の抽出と削除である．最小値の抽出は，以下のように進む：  
+\begin{enumerate}
+\item 最小ノードを削除する  
+\item 削除したノードの部分木の根を全て根の連結リストに加え，最小のものを先頭に持ってくる．
+\item 根のリスト上で次元が等しい木をマージする(二項ヒープと同様)．これを，全ての木の次元が異なるまで続ける．  
+\item 残った根の中から最小値を見つけ，ポインターを指す． 
+\end{enumerate}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{fib-heap-extr-min-1.jpg}
+\caption{\href{https://www.geeksforgeeks.org/fibonacci-heap-deletion-extract-min-and-decrease-key/}{最小値抽出}}
+\end{figure}  
+
+削除操作は削除する要素の値を$-\infty$に更新してから上の操作を行えばいい．  
+  
+フィボナッチヒープはヒープのマージ，挿入，下方更新を多く行う必要があるアルゴリズムによく使われる．
+
+\newpage
+
+# AVL木  
+
+AVL木とは二分探索木の一種で，どのノードの左右部分木の高さも差が1以内のものを指す．このような条件を満たす木を平衡二分探索木というが，AVLには，何らかの操作によってどこかで左右部分木の高さに1を超える差が生じても，再び平衡となるように自身を再構成できることが特徴である．  
+  
+通常の2分探索木は，それぞれの頂点が最高2つの子を持つ二分木で，次の特徴を満たす:  
+全ての頂点`v`において，`v`の左部分木に含まれるどの頂点`v_l`に対しても`v.key() >= v_l.key()`であり，`v`の右部分木に含まれるどの頂点`v_r`にたいしても`v.key() <= v_r.key()`が成り立つ．  
+  
+この性質の結果，二分探索木の構造は要素を挿入する順序に大きく依存する（図3参照）．
+\begin{figure}%
+    \centering
+    \subfloat[\centering 一般的な二分探索木]{{\includegraphics[width=0.45\textwidth]{bst.jpg} }}%
+    \qquad
+    \subfloat[\centering ソートされた順に挿入した時の二分探索木]{{\includegraphics[width=0.45\textwidth]{sorted_bst.jpg} }}%
+    \caption{同じ整数の集合でも，挿入の順序で木の形が大きく変わる．}
+    %\label{fig:example}%
+\end{figure}
+バランスが比較的保たれた二分探索木では，$2^h = N$であり，なお二分探索木への操作のほとんどは$O(h)$なので，結果$O(\log N)$となるしかし，図3の(b)の場合は，$h=N$となっているため，操作の計算量は$O(N)$と大きく増加する．  
+  
+この問題を，AVL木は解消する．AVL木は，削除，挿入といった操作の後に，必ず右部分木の高さと左部分木の高さの差を確認する．差が1を超えるようであれば，木は回転を行う．木の回転には右回転と左回転があり，それぞれは要素の順番を崩さずに右回転であれば右部分木の高さを1増やして左部分木の高さを1減らし，左回転であれば左部分木の高さを1増やして右部分木の高さを1減らす．その様子は，下の図に表される\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{rotate.jpeg}
+\end{figure}  
+AVL木は回転を通して常に平衡であるため，確実に$O(\log N)$に近い計算量で操作を実現している．
+
+
+\newpage 
+
+# 接尾辞配列  
+
+接尾辞配列とは，ある文字列の接尾辞を全て抽出し，それをアルファベット順に並べた時の，各接尾辞の位置を保存した配列である．以下のコードは，pythonでこれを実装したものである．
+
+```{python}
+def extract_suffix_array(string):
+    n = len(string)
+    suffixes = []
+    for i in range(n):
+        suffixes.append((i, string[i:]))
+    sorted_suffixes = sorted(suffixes, key=lambda x:x[1])
+    for i in range(n):
+        print suffixes[i], " " * i, "   --->  ", sorted_suffixes[i]
+    return [x[0] for x in sorted_suffixes]
+
+string = "algorithms"
+suffix_array = extract_suffix_array(string)
+print("suffix array of '{}' is: {}".format(string, suffix_array))
+```
+
+接尾辞配列の代表的な応用例としては，文字列の中の部分文字列の出現回数の探索があげられる．接尾辞配列は全ての可能な接尾辞を含んでいるので，この文字列の中で考えられる部分文字列は，必ずいずれかの接尾辞の接頭辞として存在しているはずだ．また，接尾辞配列ではアルファベット順に並んでいるので，該当するような接尾辞は隣り合わせになっているはずである．よって，二分探索法を2回行うこと（接尾辞配列で最初に部分文字列を含む接尾辞と最後に部分文字列を含む接尾辞）で，効率よく目的の部分文字列の出現回数を判断することができる．
+
+# References  
+
+\setlength{\parindent}{-0.2in}
+\setlength{\leftskip}{0.2in}
+\setlength{\parskip}{8pt}
+\noindent
+
+Cormen, T.H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009). Introduction to algorithms (3rd ed.). MIT Press.  
+
+VanderPlas, J., Ivezic, Z., Connolly, A., Gray, A. (2013). "Statistics, Data Mining, and Machine Learning in Astronomy". Princeton University Press. 
+  
+https://qiita.com/flare/items/20439a1db54b367eea70  
+
+https://www.tutorialspoint.com/data_structures_algorithms/avl_tree_algorithm.htm
+  
+

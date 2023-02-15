@@ -1,0 +1,68 @@
+---
+title: "ようこそRStudioの世界へ"
+author: "田中愛治"
+date:  "`r Sys.Date()`"
+output: 
+   html_document:
+     toc: true
+     toc_depth: 3
+     toc_float: true
+---
+
+</head>
+<body>
+<div id="header">
+</div>
+<div id="TOC">
+
+<style>
+table, td, th {
+  border: none;F
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+</style>
+
+<style type="text/css">
+
+body, td {
+   font-size: 14px;
+}
+
+</style>
+
+
+```{r global_option, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, echo = TRUE, message= FALSE, comment = "",
+                      fig.width = 5, fig.height = 4)
+```  
+
+
+# 1. はじめに  
+・行間を改行するとき    センテンスの終わりに「半角スペース」を二つ入れて  return key （もしくは Enter key）を打ちます。  
+・ハイパーリンクも使えます    
+現在の[発展途上国](https://ja.wikipedia.org/wiki/開発途上国)における貧困の問題は、様々な分野で注目を集めている。
+・特定の文字を **bold** にすることも可能  
+**bold** にしたい文字を二つの **star** で囲みます  
+・文字に<span style="color:red">色</span>をつけることもできます    
+
+
+# 2. 先行研究  
+
+# 3. 理論  
+ 
+# 4. 仮説  
+
+# 5. データ  
+
+# 6. 分析結果  
+
+# 7. 結論  
+
+

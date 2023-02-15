@@ -1,0 +1,270 @@
+---
+title: "Interactive term analysis simulation"
+author: "Jake Underland"
+date: "8/8/2020"
+output: html_document
+---
+
+df2 <- read.csv("data/Corruption_practice2.csv")
+
+model_12 <- lm(CPI ~ Stability*Polity + History.Democracy + LogGDPpercap + Protestant, data = df2 )
+summary(model_12)
+```{r, echo = FALSE}
+library(tidyverse)
+library(stargazer)
+library(margins)
+library(ggeffects)
+library(interplot)
+library(msm)
+library(patchwork)
+library(jtools)
+```
+
+
+```{r}
+names(df2)
+```
+
+
+```{r}
+stargazer(as.data.frame(df2), type = "text")
+```
+
+```{r}
+model_1 <- lm(CPI ~ Term.Limit*Polity, data = df2)
+summary(model_1)
+```
+
+```{r}
+stargazer(model_1, type = "text", single.row = TRUE, ci = TRUE)
+```
+```{r}
+plot_summs(model_1)
+```
+
+```{r}
+model_20 <- lm(CPI ~Term.Limit*Democracy + History.Democracy + LogGDPpercap + Protestant, data = df2)
+summary(model_20)
+```
+
+```{r}
+model_21 <- lm(CPI ~ Term.Limit*History.Democracy + LogGDPpercap + Protestant, data = df2)
+summary(model_21)
+```
+```{r}
+stargazer(model_21, type = "text", single.row = TRUE, ci = TRUE)
+```
+
+
+
+```{r}
+model_22 <- lm(CPI ~ Term.Limit*Presidential + History.Democracy + LogGDPpercap + Protestant, data = df2)
+summary(model_22)
+```
+```{r}
+stargazer(model_22, type = "text", single.row = TRUE, ci = TRUE)
+```
+
+```{r}
+model_2 <- lm(CPI ~ Term.Limit*Polity + History.Democracy + LogGDPpercap + Protestant, data = df2 )
+summary(model_2) #Model 1 
+```
+```{r}
+stargazer(model_2, type = "text", single.row = TRUE, ci = TRUE)
+```
+
+```{r}
+stargazer(as.data.frame(df2), type = "text")
+```
+```{r}
+df3 <- df2 %>%
+  dplyr::select(CPI, Term.Limit, Polity, History.Democracy, LogGDPpercap, Protestant, Stability)
+```
+
+
+```{r}
+stargazer(as.data.frame(df3), type = "text")
+```
+
+
+
+
+
+
+```{r}
+model_10 <- lm(CPI ~ Stability*Polity + 
+                 History.Democracy + 
+                 LogGDPpercap + 
+                 Protestant,
+               data = df3)
+summary(model_10)
+```
+Centralizing Data
+
+```{r}
+stargazer(as.data.frame(df3), type = "text")
+```
+
+
+```{r}
+df6 <- df3 %>%
+  mutate(Stability_c = Stability - mean(Stability, na.rm = TRUE), Polity_c = Polity - mean(Polity, na.rm = TRUE), History.Democracy_c = History.Democracy - mean(History.Democracy, na.rm = TRUE), LogGDPpercap_c = LogGDPpercap - mean(LogGDPpercap, na.rm = TRUE), Protestant_c = Protestant - mean(Protestant, na.rm = TRUE))
+```
+```{r}
+glimpse(df6)
+```
+```{r}
+stargazer(as.data.frame(df6), type = "text", digits = 2)
+```
+
+```{r}
+model_11 <- lm(CPI ~ Stability_c * Polity_c + 
+                 History.Democracy_c + 
+                 LogGDPpercap_c + 
+                 Protestant_c, 
+               data = df6)
+summary(model_11)
+```
+
+```{r}
+glimpse(df6)
+```
+```{r}
+with(df6, mean(Polity, na.rm=TRUE))
+with(df6, sd(Polity, na.rm=TRUE))
+```
+
+```{r}
+7.463768 + 3.863782
+7.463768 - 3.863782
+```
+```{r}
+ggplot(df3, aes(x = Stability, y = CPI)) +
+  geom_point(pch = 16) +
+  geom_abline(intercept = -11.768, slope = 11.26, linetype = "dashed", color = "red") +
+  geom_abline(intercept = -10.706, slope = 5.385, color = "darkgreen") +
+  ylim(-25,100) +
+  labs(x = "Regime Stability", y = "Corruption Perception Index") +
+  geom_text(label = "CPI = -11.8 + 11.3*Stability + 11.5*History \n+ 13.1*GDP + 0.1*Protestant\n(Polity Score = 10)",
+            x = 0.75, y = 12.5, family = "Times New Roman", color = "red", size = 3) +
+  geom_text(label = "CPI = -10.7 + 5.4*Stability + 11.5*History \n+ 13.1*GDP + 0.1*Protestant\n(Polity Score = 3.6)",
+            x = -1.1, y = 5, family = "Times New Roman", color = "darkgreen", size = 3)
+```
+controlled variables at 0. 
+(
+```{r}
+model_12 <- lm(CPI ~ Stability * Polity + 
+                 History.Democracy_c + 
+                 LogGDPpercap_c + 
+                 Protestant_c, 
+               data = df6)
+summary(model_12)
+```
+```{r}
+ggplot(df6, aes(x = Stability, y = CPI)) +
+  geom_point(pch = 16) +
+  geom_abline(intercept = 47.74, slope = 11.26, linetype = "dashed", color = "red") +
+  geom_abline(intercept = 48.8024, slope = 5.385, color = "darkgreen") +
+  ylim(0,100) +
+  labs(x = "Regime Stability", y = "Corruption Perception Index") +
+  geom_text(label = "CPI = -11.8 + 11.3*Stability + 11.5*History_c \n+ 13.1*GDP_c + 0.1*Protestant_c\n(Polity Score = 10)",
+            x = -1.1, y = 60, family = "Times New Roman", color = "red", size = 3) +
+  geom_text(label = "CPI = -10.7 + 5.4*Stability + 11.5*History_c \n+ 13.1*GDP_c + 0.1*Protestant_c\n(Polity Score = 3.6)",
+             x = 0.75, y = 12.5, family = "Times New Roman", color = "darkgreen", size = 3) +
+  ggtitle("Effect of Stability on CPI at Different Polity Scores")
+```
+(Control variables held at mean value instead of 0)
+
+
+
+```{r}
+interplot_1 <- interplot(m = model_10, 
+                         var1 = "Stability",
+                         var2 = "Polity") +
+  labs(x = "Polity Score (Degree of Democracy)",
+       y = "Effect of Regime Stability on Corruption") +
+  ggtitle('Marginal Effect of Model_11') +
+  geom_hline(yintercept = 0, linetype = 2) 
+
+interplot_1
+```
+
+```{r}
+model_10$coef
+```
+
+```{r}
+summary(df6$Polity)
+```
+```{r}
+at.polity <- seq(-7, 10, 3.4)
+slopes <- model_10$coef[2] + model_10$coef[7]*at.polity
+slopes
+```
+
+```{r}
+estmean <- coef(model_10)
+var <- vcov(model_10)
+
+SEs <- rep(NA, length(at.polity))
+
+for(i in 1:length(at.polity)){
+  j <- at.polity[i]
+  SEs[i] <- deltamethod(~ (x2) + (x7)*j, estmean, var)
+}
+
+upper <- slopes + 1.96*SEs
+lower <- slopes - 1.96*SEs
+
+cbind(at.polity, slopes, upper, lower)
+
+```
+
+```{r}
+msm <- cbind(at.polity, slopes, upper, lower) %>%
+  as.data.frame()
+msm
+```
+
+```{r}
+msm.graph <- msm %>%
+  ggplot(aes(x = at.polity, 
+             y = slopes,
+             ymin = lower,
+             ymax = upper)) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_ribbon(alpha = 0.5, fill = "gray") +
+  geom_line() +
+  labs(x = "Polity Score", 
+     y = "Effect of Regime Stability on Corruption") +
+  ggtitle('Marginal Effect of Model_10') +
+  xlim(-7, 10) +
+  scale_x_continuous(breaks=seq(-7, 10, 1))
+
+msm.graph
+```
+
+```{r}
+df7 <- df2[1:69,]
+df8 <- df7 %>%
+  dplyr::select(Country.Name, CPI, Term.Limit, Polity, History.Democracy, LogGDPpercap, British, Protestant, Federation, Stability)
+df8 #Appendix A
+```
+```{r}
+install.packages("expss")
+library(expss)
+cro(df8) #not very useful 
+```
+
+
+```{r}
+model_controls <- lm(CPI ~ History.Democracy +
+                       LogGDPpercap +
+                       British +
+                       Protestant +
+                       Federation, 
+                     data = df8)
+stargazer(model_controls, type="text") #Appendix B
+```
+
+

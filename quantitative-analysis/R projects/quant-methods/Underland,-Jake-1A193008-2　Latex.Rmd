@@ -1,0 +1,360 @@
+---
+title: "Sources of Corruption in Democracies"
+author: "Underland, Jake"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    toc_depth: 3
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+</head>
+<body>
+<div id="header">
+</div>
+<div id="TOC">
+
+<style>
+table, td, th {
+  border: none;F
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+</style>
+
+<style type="text/css">
+
+body, td {
+   font-size: 13px;
+}
+
+</style>
+
+```{r global_option, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, echo = TRUE, message= FALSE, comment = "",
+                      fig.width = 5, fig.height = 4)
+```  
+
+```{r, include= FALSE}
+library(tidyverse)
+library(stargazer)
+library(margins)
+library(ggeffects)
+library(interplot)
+library(msm)
+library(patchwork)
+library(jtools)
+```
+
+```{r, include = FALSE}
+df <- read.csv("data/Corruption_practice2.csv")
+df2 <- df[1:69,]
+df3 <- df2 %>%
+  dplyr::select(Country.Name, CPI, Term.Limit, Polity, History.Democracy, LogGDPpercap, British, Protestant, Federation, Stability)
+readr::write_csv(df3, path ="data/FinalizedReportData.csv")
+```
+
+# 1. Introduction:  
+| The purpose of this paper is to contribute insight to an immutable problem confronting nations across the globe: corruption. Corruption, defined here as the misuse of political power for personal benefit, has come to be recognized as a universal conundrum with grave consequences. Not only does corruption cause inefficient governance, it also entails significant economic damages in the form of decreased investment and lower levels of growth (World Bank, 1997). Research on the causes of corruption point to a myriad of factors that contribute to the problem (Treisman, 2000),  complicating the analysis and making it difficult to draw effective and practical policy implications that may help to curtail such abuse of power. This paper seeks to contribute to this convoluted discussion by focusing on corruption in democratic nations, revealing sources of corruption endemic to societies in which leaders are controlled by the populace. It does so by testing the empirical validity of a mathematic, game theoretical model of corruption in democratic societies. The paper will conclude with brief reviews of policy implications that address such sources of corruption in democracies, based off of the results of this research. 
+|    Since corruption is the misuse of political power by politicians in pursuit of self-interest, a democratic system that closely monitors politicians’ behavior and is able to “punish” political disingenuity through elections may intuitively seem as immune to corruption (Diamond & Plattner, 1993). However, as is revealed by Treisman (2000) as well as in later analyses conducted in this paper, whether a state is democratic or not is an unreliable indicator of its level of corruption. Corruption is as much an issue for democracies as for any other political system, and an empirical analysis of the causes of corruption in democracies can offer valuable insights in battling it.  
+|    The  Polity Data Series defines a democracy as a political system consisting of the following interdependent three elements: the presence of institutional means by which citizens can express their preferences in policies and leaders, the existence of institutionalized limitations to political power wielded by the executive, and the guarantee of civil liberties to citizens (Marshall & Jaggers, 2007). This paper focuses on the first element of democracy and its relationship to corruption. In most democratic societies, the principal means through which citizens express their preferences in both policies and leaders are elections. Elections decide who the citizens of a society entrust with the power and responsibility to govern their society, and political leaders are subservient to the will of the masses as expressed in elections. Citizens benefit from electing a leader that implements policies that favor the general public, and politicians and political leaders benefit from their position in office. Since corruption is defined as the misuse of political power by public officials for private gain, it can be assumed that corrupt policies are not in the interest of the general public. Elections dissuade elected officials from engaging in such acts of corruption by voting out corrupt politicians and stripping them of the benefits of being in office. When state leaders face reelection, the incentive to get reelected so as to enjoy the benefits of office for an additional term regulates their behavior and deters policies that are against the interest of the public, i.e. corrupt policies. This paper empirically examines the effect that such reelection incentives and the value of office have on a nation’s overall level of corruption.  
+|    This paper makes a couple significant contributions. First, this paper empirically examines the validity of a theory that derives from a formal mathematical model of politics. As such, it bridges the gap between theory and praxis and assesses the reliability of such models in describing practical affairs. Second, much of the literature examining the empirical relationship between corruption and the institutional characteristics of democracies hitherto has been domestic and limited in scope[^1]. Comparative cross-national analyses, such as the ones conducted in this paper, are rarer. These are necessary to identify general trends independent of a specific societal context. A cross-national analysis for this paper enables us to identify sources of corruption and determine if they are endemic to democracies or shared between all political systems, producing general results that are widely applicable.  
+
+# 2. A Short Literature Review:  
+| Barro’s (1973) and Ferejohn’s (1986) introduction of the concept of retrospective voting into game theoretical analysis of domestic politics has spawned a long literature on the regulatory effects of elections in democracies. It has been argued that incumbent heads of states and politicians are more likely to implement policies favored by the public and shun policies for self-profit that go against the interests of the general public when the value of holding office is high and incentives for reelection are strong. A simplified summary of such models is given by Gehlbach (2013: 158-167), outlined below.  
+|    Consider a two-period model, where an incumbent politician awaits a second election by voters based on her governance in the first period. The model questions the extent to which reelection incentives motivate the incumbent to reject corrupt policies that directly benefit her and opt for policies that improve voter welfare.  
+|    Assume the act of governing by the incumbent is the act of dividing an infinitely divisible resource of size one between herself and the public. In period 1, the incumbent chooses a value $r ∈ [0, 1]$ which denotes the proportion of this resource that she will keep for herself. This can be seen as the proportion of resources she allocates to corrupt policies for private gain. The remaining amount $1 – r$ is distributed to the voters, or resources channeled towards policies conducive to the welfare of the general public. Assume also that by winning the second election and being elected to serve as head of state for period 2, the incumbent receives an exogenous payoff of $R$, discounted in accordance with the discount factor $δ ∈ (0, 1)$. Furthermore, the probability of reelection for the incumbent is dependent on the endogenous variable $r$ and so is expressed as $π (r)$, where the higher the value of $r$, the lower the value of $π (r)$. This is because the higher the value of $1-r$, ergo the lower the value of $r$, the stronger the public’s desire will be to reelect the incumbent. In this model, the incumbent’s expected payoff is expressed as  
+<center> $$r + δπ (r) R$$ </center>  
+| where $δπ (r) R$ is the expected value of reelection written in today’s terms.  
+|    The implications of such a model are as follows. When the payoff $R$ for being reelected and the discount factor $δ$ are high, it is in the interest of the incumbent to lower the value of $r$ in order to increase the probability $π (r)$ that she will be reelected. Conversely, if $R$ and $δ$ are both low, the incumbent’s reelection incentives are also low, and she is better off increasing the value of $r$ in order to increase the amount of direct benefit she receives from period 1 of governing, even if that means foregoing any chance of reelection.  
+|    Here I introduce two elements that are central to my subsequent analyses and examine their effect on corruption within the context of the model described above. The first is the existence of term limits. As the model shows, in order for reelection incentives to regulate incumbent politicians’ behavior and dissuade them from corruption, the incumbent’s expected value of reelection $δπ (r) R$ must be high. However, the existence of term limits makes it so that during the legally established final term of an incumbent head of state, the probability of reelection $π (r)$ is exogenous and determined to be equal to $0$ independent of the value of $r$. This is tantamount to saying $δπ (r) R = 0$. Since $δπ (r) R = 0$, the incumbent has no incentive to appeal to the masses and therefore will benefit more from pursuing corrupt policies which allocate resources for her own personal gain[^2]. From here it can be surmised that democracies with shorter term limits (and therefore more frequent “last terms”) experience higher levels of corruption than democratic countries with longer term limits.  
+|    The second element is political stability. When political systems are stable and the possibility of a disruption or violent overthrow of the government is low, the discount factor $δ$ takes a higher value. This is because the prospect of reelection and the benefits it will bring are stable and secure, thus rendering future payoffs as desirable as present payoffs. On the other hand, if the political system is unstable and there is a high risk of governmental disturbance, an investment in future payoffs becomes uncertain and less desirable, thus decreasing the value of future payoffs relative to current payoffs and bringing down the discount factor $δ$. A decline in $δ$ decreases the incumbent’s expected value of reelection $δπ (r) R$ and discourages her from pursuing reelection. Therefore, I conjecture that politically unstable democratic governments experience higher levels of corruption.  
+|    In sum, stable governments with long term limits have less corruption, while unstable governments with short term limits deal with higher levels of corruption. It is important to note, however, that this theory deals solely with democracies in which incumbent politicians are reliant on the will of the people to stay in office, and so the same cannot be said of autocratic or technocratic societies.   
+|    Counterarguments to this theory are presented by Campante et al. (2009). They  argue that the amount of corruption in a society is contingent not only on the supply of corruption, which is determined by the incumbent politician’s will to engage in corrupt policies, but also on the demand of corruption in the unofficial market, for example the amount of bribes private firms are willing to pay to the government for certain benefits. In their eyes, a stable, long lasting regime is particularly appealing to private firms and increases demand in the unofficial market to pay bribes. The more demand there is for corrupt policies, the higher the price of bribes becomes, as maintained by simple supply and demand analysis, leading to larger payoffs for incumbents who engage in corruption. Therefore, the increase in corruption demand may offset the effects of the decrease in corruption supply (the incumbent politician’s desire to undertake corruption).  
+|    Furthermore, Shleifer and Vishny (1993) argue from the supply side of corruption, contending that greater competition in the political sphere increases corruption supply and decreases the price of bribes. Low bribes discourage potential competitor politicians from entering the competition for corruption, maintaining corruption at low levels. It follows that greater office turnover and frequent entrances and exits of “fresh faces” might lower the overall level of corruption.  
+|    These rival theories suggest that it is not inherently obvious and, consequently, inadequate to assume that stable governments with long term limits have less corruption than unstable governments with short term limits. In fact, in some cases stability and long term limits may contribute to higher levels of corruption, rendering the effects of political stability and term limits on corruption conflicted and inconclusive. 
+
+# 3. Theory:
+| The aim of this paper is to test the empirical veracity of the following theory, drawn from the Barro-Ferejohn model as summarized by Gehlbach (2013: 158-167).  
+<br>
+Theory: In democracies, the expected value of reelection regulates incumbent officials’ behavior and determines the level of overall corruption. More specifically, the existence of shorter term limits and higher political instability causes higher levels of corruption.  
+<br>
+
+|    The countertheory, drawn from the arguments of Campante et al. (2009) and Shleifer and Vishny (1993) concerning the supply and demand of corruption, can be stated like so:  
+<br>
+Countertheory: In democracies, higher corruption demand increases total corruption, while higher corruption supply can lower total corruption. Thus, stable and lasting governments, which increase corruption demand and decrease corruption supply, have an inconclusive effect on the total level of corruption[^3].  
+
+# 4. Hypotheses:
+| My theory states that the expected value of reelection regulates incumbent officials’ behavior and influences corruption. Since during an incumbent’s legally imposed last term the incumbent’s expected value of reelection is nil, it is predicted that a politician’s last term engenders higher levels of corruption than other terms. States with shorter term limits experience such “last terms” more frequently than states with longer term limits (for example, the term limit for Korea’s president is one term, making every president’s term a “last term”, whereas the term limit for the president of the United States is two terms, making roughly one in two terms a “last term”). From here, I draw the first hypothesis and corresponding counterhypothesis. 
+<br>
+H1: In democratic societies, overall corruption levels are lower for states with longer term limits for their head of state.  
+H1’: In democratic societies, the effect of term limits for heads of state on overall corruption levels is inconclusive. 
+<br>
+
+|    Furthermore, political stability also influences the incumbent’s expected value of reelection. In uncertain political environments, the value of future payoffs by reelection depreciates in relation to the value of immediate payoffs by corruption, giving incentive to incumbent heads of state to forego chances of reelection and opt for extracting maximum benefit from corrupt policies. From here, I draw the second hypothesis and corresponding counterhypothesis. 
+<br>
+H2: In democratic societies, overall corruption levels are lower for states with higher political stability.  
+H2’: In democratic societies, the effect of political stability on overall corruption levels is inconclusive. 
+<br>
+
+|    In the following portions of this paper, in congruence with the hypotheses postulated above, I treat term limits and political stability as explanatory variables and examine their effects on corruption, the response variable, through quantitative, cross-national analyses. Furthermore, I determine whether the effects analyzed above are endemic to democracies, as predicted by my theory, by introducing an interactive term that indicates the level of democracy in each state and examining the differences in marginal effects of each explanatory variable according to the level of democracy. The methods and data with which theses analyses will be conducted are presented in the following section.  
+
+# 5. Data and Methods:
+| In order to test the hypotheses presented in the previous section, I employ an OLS multiple regression model measuring the effects of term limits and political stability on corruption separately, along with several control variables. Furthermore, to ascertain whether these effects are particular to democracies, I incorporate an interaction variable indicative of the level of democracy of each state and examine whether the level of democracy affects the impacts of the aforementioned explanatory variables on the response variable. A rough illustration of the models analyzed in this paper are depicted below in Figure 1. 
+![](figs/Figure_1.png)
+
+|    The unit of each analysis is countries. I analyze a dataset consisting of 69 countries from 6 continents selected based on data availability. Although the dataset was not assembled by random sampling, the only criteria for selection was data availability. Furthermore, I have included all countries for which I was able to find all the data necessary for my analyses, minimizing the risk of selection bias. The list of countries along with the data for each variable is shown in Appendix A. By setting the unit of analysis to countries I attempt to reveal trends in the data on a cross-national scale, independent of a specific societal context that may bias my findings. 
+|    The only response variable in the study is the Corruption Perception Index (CPI) released annually by Transparency International. The index is best described as an aggregation of different surveys and polls as well as ratings by experts concerning perceived corruption in each state. The results of the various component polls and ratings comprising the CPI are highly correlated among themselves, reducing the risk that the CPI is unduly influenced by the whims of a particular organization (Treisman, 2000). For the present analysis, I use the CPI score of each state for the year 2018. However, the CPI scores are highly correlated across years (the correlation coefficient for each year’s CPI scores and the preceding year’s CPI scores averaged 0.9941 for the years 2013-2019), meaning the CPI scores for this particular year do not reflect erratic fluctuations and instead convey mid- to long-term levels of perceived corruption in the respective state. The CPI score takes a value of 0-100, with 0 being most corrupt and 100 being least corrupt.   
+|    The chief explanatory variables considered in my analyses are term limits and political stability. For term limits, I have compiled data on the term limits for the head of state for each country. The data was taken from the Central Intelligence Agency's *The World Factbook*. The head of state here is defined as the effective governing authority for each government’s political system, e.g. the prime minister in a parliamentary system and the president in a presidential or semi-presidential system, excluding figures with limited ceremonial roles in government (for example, the president of Latvia). The term limit here is defined as the number of consecutive terms a head of state is legally allowed in office (for countries such as Panama where the head of state is allowed two non-consecutive terms, the term limit is considered to be 1), and in the cases where there are no legally defined term limits, such as most parliamentary democracies, the term limit is considered to be 3. Furthermore, governments that have revised constitutional term limits in the past 15 years have been excluded from this study. The limits of this method are discussed in depth in section 7 of this paper, along with suggestions for improvement in future research.  
+|    Political stability is measured by the Political Stability and Absence of Violence/Terrorism (henceforth abbreviated as Political Stability) index released by The World Bank. This index measures “perceptions of the likelihood of political instability and/or politically-motivated violence, including terrorism (Kauffman et al., 2010).”  The scores range from -2.5 to 2.5, with increasing stability the higher the score is. The analysis uses scores from 2018.  
+|    For my interactive term, the Polity score from the Polity Data Series IV, released by the Center for Systemic Peace, is used as an indicator of the level of democracy per state. The Polity Data Series assesses governments by giving them a score from -10 to 10, where -10 to -6 are autocracies, -5 to 5 are anocracies, and 6 to 10 are democracies. One of the three main requirements for democracies according to Polity Data Series IV is the existence of means by which citizens can communicate preferences in leaders and policies, or elections (Marshall & Jaggers, 2007). Since the only characteristic the Barro-Ferejohn model, which my theory is derived from, requires for a democracy is the existence of elections, the Polity score is a sufficient identifier of democracies for this study. I use the Polity scores for the year 2018 for each analysis.  
+|    As for control variables, Treisman (2000) identified five variables as robustly statistically significant in explaining corruption: history of British rule, federation, history of democracy, level of economy, and Protestantism. For history of British rule, federation, and history of democracy, I have constructed dummy variables for each denoting whether each state has a history of British rule, is a federation, or has maintained 40 years of uninterrupted democracy. The dummy for British rule was constructed based on Fieldhouse (1982), Grier (1995) and Horrabin (1937), federation on Elazar (1995), and history of democracy based on whether countries had maintained a polity score of 6 or above from 1978 to 2018. Protestantism is represented by the percent of Protestants in the population for the year 2013, according to data released by The Cline Center for Democracy, and level of economy is based on the $log_{10}$ value of GDP per capita for 2018 (measured in dollars), calculated from data released by The World Bank.  
+|    Through an initial OLS multiple regression analysis of the above variables on CPI using the data shown in Appendix A, the results to which can be found in Appendix B, I find that only the following three variables are statistically significant: a history of democracy, level of economy, and Protestantism. Therefore, I limit the number of control variables included in my analyses to these three.    
+|    A list of descriptive statistics of the data mentioned above is available in Appendix C. 
+|    Now that I have introduced all the data used in our analyses, the operationalized forms of the hypotheses and counterhypotheses mentioned in the previous section are below.  
+<br>
+  H1: In states with high Polity scores, longer term limits for their heads of state lead to higher CPI scores.  
+  H1’: In states with high Polity scores, the effect of term limits for heads of state on CPI scores is inconclusive.  
+<br>
+  H2: In states with high Polity scores, higher Political Stability scores lead to higher CPI scores.  
+  H2’: In states with high Polity scores, the effect of Political Stability scores on CPI scores is inconclusive.  
+  
+# 6. Results: 
+| The results of 2 OLS multiple regression analyses are shown below in Table 1. The independent variables are listed on the left and their coefficients are listed on the right. Model 1 looks at the effect of term limits on CPI along with control variables mentioned in the previous section, while Model 2 replaces term limits with Political Stability scores, all else held constant. In the table, Term.Limit denotes term limits, Stability denotes Political Stability scores, Polity denotes Polity scores, History.Democracy denotes uninterrupted democracy from 1978 to 2018, LogGDPpercap denotes the $log_{10}$ value of GDP per capita, Protestant denotes the percentage of protestants among the population, Term.Limit:Polity denotes the interaction term between term limits and Polity scores, and Stability:Polity denotes the interaction term between Political Stability scores and Polity scores. 
+
+```{r, include=FALSE}
+model_1 <- lm(CPI ~ Term.Limit*Polity + 
+                History.Democracy +
+                LogGDPpercap +
+                Protestant, 
+              data = df3)
+```
+
+```{r, include=FALSE}
+model_2 <- lm(CPI ~ Stability*Polity +
+                History.Democracy +
+                LogGDPpercap +
+                Protestant, 
+              data = df3)
+```
+
+```{r, echo=FALSE, results="asis"}
+stargazer(model_1, model_2, type="latex", style= "default", title ="OLS regression results for Models 1 and 2", single.row=TRUE, column.sep.width="1pt", digits=2, no.space = TRUE, font.size = "footnotesize", header=FALSE) #Table 1
+```
+
+|    Note that in Model 1, the only independent variables shown to be statistically significant with a p-value of less than 0.1 are the control variables. Term.Limit, Polity, and Term.Limit:Polity are not statistically significant and do not help explain changes in the CPI. This means that regardless of the degree of a country's democracy, the term limit is not a reliable indicator of corruption within a country. These findings reject hypothesis H1 in favor of H1', suggesting that the effect of term limits on a country's overall level of corruption is inconclusive.  
+|    In Model 2, however, Stability:Polity has a p-value of under 0.1, meaning there is a less than 10% chance that the effects of political stability are negligible when taking the degree of democracy into account. Though this is in no way a robust result, it gives a general indication that the Political Stability score does affect a state's overall level of corruption depending on the Polity score of that state. The Stability variable does not yield statistically significant results, implying that political stability in itself does not determine the level of corruption in a state. Since the results for Stability shown in this table assume that all other variables have a value of 0, it can be said that in a state with a polity score of 0 (an anocracy), political stability is insignificant to corruption. This finding lends support to hypothesis H2 that only in states with high degrees of democracy does political stability influence corruption. Shown in Table 2 are the results of the same multiple regression analysis as Model 2 except with centralized results. This allows us to observe the coefficients for independent variables when all other variables are held at their mean value instead of 0. For a list of descriptive statistics, including the mean for each variable, see Appendix C. 
+```{r, include = FALSE}
+df4 <- df3 %>%
+  mutate(Stability_c = Stability - mean(Stability, na.rm = TRUE), Polity_c = Polity - mean(Polity, na.rm = TRUE), History.Democracy_c = History.Democracy - mean(History.Democracy, na.rm = TRUE), LogGDPpercap_c = LogGDPpercap - mean(LogGDPpercap, na.rm = TRUE), Protestant_c = Protestant - mean(Protestant, na.rm = TRUE))
+glimpse(df4)
+```
+
+```{r, echo=FALSE, results="asis"}
+model_3 <- lm(CPI ~ Stability_c * Polity_c + 
+                 History.Democracy_c + 
+                 LogGDPpercap_c + 
+                 Protestant_c, 
+               data = df4)
+stargazer(model_3, type="latex", style="default", title ="Centralized results for Model 2", single.row=TRUE, column.sep.width="1pt", digits=2, no.space = TRUE, font.size = "footnotesize", header=FALSE) #Table 2
+```
+
+|    The key difference between Model 2 and the centralized results of Model 2 is the coefficient for Stability. When all other variables are held at mean levels, a one point increase in the Political Stability score leads to an 8.9 point increase in CPI. Furthermore, the p-value of the results are less than 0.01, meaning there is a less than 1% chance that the effects measured here are negligible. Since the mean value of Polity scores is 7.5 (democracy), these results imply that in a democracy, the impact of political stability on corruption is positive, large and highly statistically significant, rendering further support to hypothesis H2. In Figure 2, I examine the different impacts of political stability on corruption in states with differing Polity scores. I chose to analyze the effects of stability when Polity scores take the values of 10 and 3.6[^4]. 
+
+```{r, fig.align='center', echo = FALSE}
+ggplot(df4, aes(x = Stability, y = CPI)) +
+  geom_point(pch = 16) +
+  geom_abline(intercept = 47.74, slope = 11.26, linetype = "dashed", color = "red") +
+  geom_abline(intercept = 48.8024, slope = 5.385, color = "darkgreen") +
+  ylim(0,100) +
+  labs(x = "Political Stability", y = "Corruption Perception Index") +
+  geom_text(label = "CPI = -11.8 + 11.3*Stability + 11.5*History_c \n+ 13.1*GDP_c + 0.1*Protestant_c\n(Polity Score = 10)",
+            x = -0.85, y = 60, family = "Helvetica", color = "red", size = 2.8) +
+  geom_text(label = "CPI = -10.7 + 5.4*Stability + 11.5*History_c \n+ 13.1*GDP_c + 0.1*Protestant_c\n(Polity Score = 3.6)",
+             x = 0.73, y = 12.5, family = "Helvetica", color = "darkgreen", size = 2.8) +
+  ggtitle("Figure 2: Effect of Stability on CPI at Different Polity Scores") +
+  labs(caption="Control variables held at mean values instead of 0") +
+  theme(plot.title = element_text(size = 12, family ="Times"))
+```
+<br>
+
+|    The formulas for the lines are based off of the following standard equation for OLS multiple regression models:  
+$CPI$ $$=β_0+β_1Stability+β_2Polity+β_3History.Democracy\_c+β_4LogGDPpercap\_c+β_5Protestant\_c+β_6Stability*Polity$$ $$ =β_0+β_2Polity+(β_1+β_6Polity)Stability+β_3History.Democracy\_c+β_4LogGDPpercap\_c+β_5Protestant\_c$$
+
+| where Polity is substituted by the values 10 and 3.6 and the coefficients are substituted according to the results of Model 2. However, the intercept has been recalculated to show the intercept when Polity takes one of the two values mentioned above and the control variables take their respective mean values.   
+|    In Figure 2, the slope of the line is larger when Polity takes a value of 10 than when Polity takes a value of 3.6. When the Polity score is 10, a one point increase in Political Stability score leads to an 11.3 point increase in CPI, whereas when the Polity score is 3.6 a one point increase in Political Stability score only increases the CPI by 5.4 points. This reveals that the impact of Political Stability score on CPI is greater when the state's Polity score is high. Figure 3 maps out the marginal effect of political stability on corruption vis-à-vis level of democracy. 
+
+```{r, include=FALSE}
+model_2$coef
+summary(df3$Polity)
+```
+
+```{r, include=FALSE}
+at.polity <- seq(-7, 10, 3.4)
+slopes <- model_2$coef[2] + model_2$coef[7]*at.polity
+slopes
+```
+
+```{r, include=FALSE}
+estmean <- coef(model_2)
+var <- vcov(model_2)
+
+SEs <- rep(NA, length(at.polity))
+
+for(i in 1:length(at.polity)){
+  j <- at.polity[i]
+  SEs[i] <- deltamethod(~ (x2) + (x7)*j, estmean, var)
+}
+
+upper <- slopes + 1.96*SEs
+lower <- slopes - 1.96*SEs
+
+cbind(at.polity, slopes, upper, lower)
+
+```
+
+```{r, include=FALSE}
+msm <- cbind(at.polity, slopes, upper, lower) %>%
+  as.data.frame()
+msm
+```
+
+```{r, fig.align='center', echo=FALSE, fig.height=3}
+msm.graph <- msm %>%
+  ggplot(aes(x = at.polity, 
+             y = slopes,
+             ymin = lower,
+             ymax = upper)) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  geom_ribbon(alpha = 0.5, fill = "gray") +
+  geom_line() +
+  labs(x = "Polity Score", 
+     y = "Effect of Political Stability on CPI") +
+  ggtitle('Figure 3: Marginal effect of Model 2') +
+  theme(plot.title = element_text(size = 12, family ="Times")) +
+  xlim(-7, 10) +
+  scale_x_continuous(breaks=seq(-7, 10, 1))
+
+msm.graph
+```
+
+|    Figure 3 shows that Political Stability carries a positive impact on CPI when the Polity score is high. Moreover, the higher the Polity score, the larger the positive impact of Political Stability on CPI, maxing out at 11.3 at a Polity score of 10. This builds on to hypothesis H2 by suggesting that the more democratic a state is, the larger the impact of political stability on corruption. Note that for any value of Polity below 4, the 95 percent confidence interval, represented in the shaded area, includes 0 on the y-axis. This signifies that the impact of Political Stability on CPI is only statistically significant when the Polity score takes a value above 4. This is in line with hypothesis H2 which states that political stability is only relevant to corruption in democracies.  
+
+# 7. Conclusion:
+| This paper studied the relationship between the head of state's expected value of reelection, measured by term limits and political stability, and corruption in democratic countries. In order to empirically test this relationship, I drew two hypotheses and constructed two OLS multiple regression models to analyze each. In H1, I hypothesized that in democratic societies, overall corruption levels are lower for states with longer term limits. In H2, I hypothesized that in democratic societies, overall corruption levels are lower for states with higher political stability.  
+|    My findings reject H1 and conclude that there is no statistically significant relationship between the term limits of a state's effective governing authority and corruption in that state. The reasons for this may be the same as the arguments of Campante et al. (2009), namely, that the conflicting effects of an increase in corruption demand and decrease in corruption supply confound the impact of a longer term limit on corruption, rendering it inconclusive. However, if this were the main reason behind the lack of support I found for H1, it can be predicted that an analysis of H2 would deliver similar results. Since the analysis of H2 differed drastically from the analysis of H1 and provided evidence supportive of the hypothesis, I assume that the lack of empirical support for H1 is attributable to other reasons, among which is poor research design. I will discuss this in further detail along with suggestions for future research later.  
+|    This paper finds considerable support for H2. According to Model 2 and subsequent analyses, Political Stability scores positively impact CPI, meaning that higher political stability leads to lower levels of corruption. However, these effects are limited to states with a Polity score exceeding 4. Once crossing this threshold, the higher a state's Polity score is, the larger the positive impact of political stability on corruption becomes, an outcome not predicted by the hypothesis.  
+|    One thing that requires special care and attention when interpreting these results is the direction of causation. It is not clear from a simple OLS multiple regression model if the independent variable is causing a change in the dependent variable, or if the inverse is true. Indeed, the two may be endogenous variables influencing each other, which will further complicate analysis. Unfortunately, an analysis determining the direction of causation exceeds the scope of this study, therefore the exact direction of causation between political stability and corruption in democracies cannot be determined. However, what can be stated with certainty based on the findings of this paper is that in democracies, high levels of political stability are associated with low levels of corruption, the extent of the impact of political stability commensurate to the degree of democracy.  
+|    In sum, the results of this research find partial support for my theory. Although term limits had no effect on overall level of corruption regardless of the state's level of democracy, political instability helped explain the degree of corruption in democratic states. These findings suggest that in a democratic state, the discount factor of a state leader's expected value of reelection is pivotal in incentivizing her and regulating her behavior, just as the Barro-Ferejohn model suggests. However, contrary to the Barro-Ferejohn model's prediction, term limits have little to no regulatory effect on state leaders. Therefore, my theory, based off of the Barro-Ferejohn model, finds only partial support on a cross-national scale.  
+|    This conclusion implies that altering a state's term limit, whether prolonging or truncating it, would have no noticeable effect on overall corruption in a democracy. There are many arguments for and against the installation of shorter term limits in order to curtail corruption, but based on the analysis presented in this paper, term limits do not seem to be relevant to corruption irrespective of the state's political system.  
+|    Furthermore, political stability may play an important role in controlling the level of corruption in democracies. In countries with great civil unrest, manifested in large demonstrations and acts of aggression, corruption levels may increase. This does not necessarily mean that unrest causes more corruption, as the direction of causation cannot be affirmed with certainty. However, with protests currently breaking out in great frequency across the United States and threatening political stability, the relationship between political stability and corruption is of great interest. Addressing and alleviating the anger and frustration of the people may not only stabilize the political landscape, but may prove conducive to lowering levels of corruption as well.  
+|    Fixing potential flaws in the research design would improve the present research in several ways. Firstly, the CPI released by Transparency International is a very general index, representing perceived corruption on a national scale. However, the kind of corruption my theory deals with is misuse of political power by the head of state for private gain. Perhaps a more reliable measure of corruption would have been to compile the number of bribes taken by a head of state during a given term. Furthermore, although a country's term limits provide a rough estimation of the frequency of "last terms", this study failed to account for the length of terms. This is a challenge particular to cross-national analysis, where the need to compare between disparate political systems complicates analysis. A more suitable approach may have been to limit the unit of analysis to terms held by heads of state in a given country and examine whether legal last terms produced higher levels of corruption than terms where the incumbents face a possibility of reelection. Another potential flaw in this study is that term limits may have acted as a proxy for presidential and parliamentary systems, since parliamentary systems do not typically impose term limits on their heads of state, while presidential systems do. The difference in parliamentary and presidential systems may have also had an effect on corruption, possibly adulterating this paper's analysis of term limits. Finally, as mentioned earlier, a more rigorous testing of the direction of causation for the correlations found in the present study would enrich the research and provide further valuable policy implications.    
+  
+# 8. References:
+Barro, R. J. (1973). The control of politicians: An economic model. *Public Choice, 14-14*(1), 19-42. doi:10.1007/bf01718440  
+  
+Benito, B., Guillamón, M., Ríos, A., & Bastida, F. (2018). Can salaries and re-election prevent political corruption? An empirical evidence. *Revista de Contabilidad, 21* (1), 19-27. doi:10.1016/j.rcsar.2017.04.003.  
+  
+  Campante, F. R., Chor, D., & Do, Q. A. (2009). Instability and the incentives for corruption. *Economics & Politics, 21*(1), 42-92. doi:10.1111/j.1468-0343.2008.00335.x  
+    
+Center for Systemic Peace. (2019). Polity data series IV 2018 [Data file]. Available from https://www.systemicpeace.org/polityproject.html  
+  
+Central Intelligence Agency. *The world factbook*. Retrieved from https://www.cia.gov/library/publications/the-world-factbook/  
+  
+Chhibber, A., Commander, S. J., Evans, A. M., Fuhr, H. L., Kane, C. T., Leechor, C., Levy, B. D., Pradhan, S., & Weder, B. S. (1997). World development report 1997 : The state in a changing world. World Development Report, World Bank Group. Retrieved from: http://documents.worldbank.org/curated/en/518341468315316376/World-development-report-1997-the-state-in-a-changing-world  
+  
+Diamond, L., & Plattner, M.F. (1993). *The global resurgence of democracy*. Johns Hopkins University Press.  
+  
+Elazar, D. (1995). From statism to federalism: a paradigm shift. *Publius, 25* (2), 5–18.  
+  
+Ferejohn, J. (1986). Incumbent performance and electoral control. *Public Choice 50*, 5–25. doi:10.1007/BF00124924  
+  
+Ferraz, C., & Finan, F. (2008). Exposing corrupt politicians: The effect of Brazil’s publicly released audits on electoral outcomes. *The Quarterly Journal of Economics, 123*. 703-745. doi:10.1162/qjec.2008.123.2.703  
+  
+Fieldhouse, D. K. (1982). *The colonial empires: A comparative survey from the eighteenth century (2nd edition)*. Macmillan.  
+  
+Gehlbach, S. (2013). *Formal Models of Domestic Politics (Analytical Methods for Social Research)*. Cambridge University Press. doi:10.1017/CBO9781139045544  
+  
+Grier, R. (1995). The effect of religion on economic development: A cross national study of 63 former colonies. *Kyklos, 50* (1), 47–62.  
+  
+Hlavac, M. (2018). stargazer: Well-Formatted Regression and Summary Statistics Tables. R package version 5.2.2. https://CRAN.R-project.org/package=stargazer  
+  
+Horrabin, J.F. (1937). *An atlas of empire.* Knopf.  
+  
+Kaufmann, D., Kraay, A., & Mastruzzi, M. (2010). The worldwide governance indicators: Methodology and analytical issues. World Bank Policy Research Working Paper No. 5430 doi:10.1596/1813-9450-5430  
+  
+Marshall, M. G., & Jaggers, K. (2007). *Polity IV project political regime characteristics and transitions, 1800-2006: Dataset user’s manual.* Center for Systemic Peace.   
+  
+Rose-Ackerman, S. (1978). *Corruption: A study in political economy.* Academic Press.   
+  
+Shleifer, A., & Vishny, R. W. (1993). Corruption. *The Quarterly Journal of Economics, 108*(3), 599-617. doi:10.2307/2118402  
+  
+The Cline Center for Democracy. (2014). Percent protestant 2013 [Data file] Retrieved from https://www.theglobaleconomy.com/rankings/protestant/  
+  
+The World Bank. (2019). Political stability and absence of violence/terrorism from Worldwide governance indicators [Data file]. Retrieved from https://datacatalog.worldbank.org/political-stability-and-absence-violenceterrorism-estimate  
+  
+The World Bank. (2020). GDP per capita (current US$) [Data file]. Retrieved from https://data.worldbank.org/indicator/NY.GDP.PCAP.CD  
+  
+Transparency International. (2020). Corruption perception index 2019: Score timeseries since 2012 [Data file]. Retrieved from https://www.transparency.org/en/cpi/2019/results  
+  
+Treisman, D. (2000). The causes of corruption: A cross-national study. *Journal of Public Economics, 76*(3), 399-457. doi:10.1016/s0047-2727(99)00092-4
+
+# 9. Appendix:
+**Appendix A**
+```{r, echo = FALSE, results="asis", fig.align='center'}
+library(knitr)
+library(kableExtra)
+kable(df3[1:69,], format = "latex", booktabs=TRUE, caption="Dataset for this research") %>%
+  kable_styling(latex_options="scale_down")
+```
+
+\newpage
+
+```{r, include = FALSE}
+model_controls <- lm(CPI ~ History.Democracy +
+                       LogGDPpercap +
+                       British +
+                       Protestant +
+                       Federation, 
+                     data = df3)
+```
+
+```{r, include=FALSE}
+summary(model_controls)
+```
+
+
+
+**Appendix B**
+```{r, echo=FALSE, results= "asis"}
+stargazer(model_controls, type="latex", style="default", title="OLS multiple regression analysis of control variables", single.row=TRUE, column.sep.width="1pt", digits=2, no.space = TRUE, font.size = "footnotesize", header=FALSE) #Appendix B
+```
+
+**Appendix C**
+```{r, echo = FALSE, results="asis"}
+stargazer(as.data.frame(df3), type = "latex", style="default", title="Desriptive statistics of variables", single.row=TRUE, column.sep.width="1pt", digits=2, no.space = TRUE, font.size = "footnotesize", header=FALSE)
+```
+
+[^1]:See, for example, Frederico and Claudio (2005), Benito et al. (2018).  
+[^2]:For a closer discussion of elected official’s political behavior in the face of a term limit, see Rose-Ackerman (1978: 15–58).   
+[^3]:It cannot be said that stable and lasting governments unequivocally increase the level of corruption. This is because  Campante et al. (2009) admit into their analysis the effects of a decreased supply of corruption, due to higher reelection incentives in stable and lasting governments, which run counter to the effects of an increased demand of corruption.  
+[^4]:I derive these values from adding the standard deviation to and subtracting the standard deviation from the mean value of Polity. The equations are shown below:  
+$$7.463768 + 3.863782 = 11.32755$$
+$$7.463768 - 3.863782 = 3.599986$$
+Since the Polity score only goes as high as 10, I replaced the first value with 10. These values are useful since, from the definition of standard deviation, between them they include roughly 68% of the observations for the given variable and are a good indication of what value is considered large and what value is considered small for each variable.
+
+

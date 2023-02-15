@@ -1,0 +1,197 @@
+---
+title: "Economic Policy - Notes"
+subtitle: "Economic Policy Fall, 2021"
+author: "Jake Underland"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: lualatex
+    toc: true
+    toc_depth: 3
+    extra_dependencies: ["amsmath", "color", "hyperref", "luatexja"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+documentclass: ltjarticle
+geometry: "margin=3cm"
+#classoption: lualatex, ja=standard
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro  
+
+## Functions
+
+* Functions and curves are relationships that map a field to another field. 
+$$f:\underbrace{A}_\textit{domain} \to B$$
+
+* *Demand curve* maps price to demand, *cost curve* maps price to cost.  
+
+* In most graphs, the domain is taken on the x-axis and the image of A under the curve f is taken on the y-axis. However, when graphing supply and demand, custom dictates we do the opposite (price, which is the input, is on the y-axis and demand/supply is on the x-axis).  
+
+## Partial and General Equilibrium Models  
+
+* General Equilibrium models employ indifference curves. Partial equilibrium models employ cost and demand curves.  
+
+## Goals of Government  
+
+* *Efficiency* and *equity*.  
+
+* When focusing on efficiency, partial equilibrium models are sufficient.  
+
+* In this class, we assume the government is only concerned with efficiency.  
+
+* *Efficiency* = Pareto efficiency -> there is no alternative allocation where all parties are left better off than they were before. Efficiency implies the maximization of net surplus (if net surplus can be further increased, then by increasing and adjusting the allocation ex-post, all parties can improve their share). 
+
+* Consumer surplus = benefit - expenditure  
+Utility is a more broadly defined concept and its conversion to quantitative price need not be defined.  
+
+* Profit = Revenue - Cost  
+
+## Normative Arguments in Economics  
+
+* the value of a commodity is not decided extraneously but decided by the consumer subjectively (allows for freedom of individual values).  
+* Society should respect that and policy should be aimed at maximizing that (but how do we measure an inherently subjective value judgment in an objective manner? $\downarrow$)  
+* Economics posits that if consumers are rational, such value judgments can be measured objectively by using prices to rank preferences. Further, it can be maximized.  
+
+## Marginal Benefit Curve and Demand Curve  
+
+* Marginal Benefit Curve = Demand Curve  
+
+* However, Demand Curve $= f: \textcolor{red}{price} \to \textcolor{blue}{consumption}$ and MBC $= f:\textcolor{blue}{consumption} \to \textcolor{magenta}{marginal \: benefit}$  
+
+* How are they the same? -> if a consumer is rational, they will consume a product until their marginal benefit from the product is equal to its price (cost).  
+
+* We build the demand curve by taking the rational consumption amount for each price (so the amount where marginal utility = price). The Demand Curve is just a plot of the marginal utility at each quantity of the commodity. 
+
+* If the Demand Curve goes left to right, starting with an input price and outputting a level of demand, then the Marginal Benefit Curve goes right to left, starting with a level of consumption and outputting a marginal benefit (=represented as price).  
+* Marginal Cost Curve and Supply Curve have exact same relationship.  
+* \hypertarget{foo}{\textbf{Lies on a few assumptions:}}  
+1. Consumers and producers are rational actors  
+2. Consumers and producers are price-takers.  
+3. (Simplification assumption but not necessary:) MB and MC are gradually decreasing/increasing.  
+  
+## Analysis of Net Surplus  
+
+* Demand and supply curves give us surplus -> Extract normative information from positive information.  
+
+## Deductive Positivistic Analysis  
+
+* Policy $\to$ Fundamentals (cost, benefit) $\to$ desirable outcome (price, production amount)  
+
+* Economics is able to take into consideration the channels of change.  
+
+# Meaning of Efficiency  
+
+* What is net surplus? -> Net surplus can be defined in the absence of a market (i.e. without supply and demand curves). Such a definition is necessary when evaluating and comparing the efficiency of different methods to distribute resources.  
+
+* The net surplus of a given allocation method: 
+$$\text{Total Benefit of all consumers} - \text{Total cost of all firms}$$
+
+* (Deriving the market equation for net surplus from the above:)
+$$\begin{aligned} 
+\text{Net Surplus} =& \text{Total Benefit of all consumers} - \text{Total cost of all firms} \\
+=& \textcolor{red}{(\text{Total Benefit of consumers} - \underbrace{\text{Total expenditure of consumers}}_\text{=total profit firms})}\\
+&+ \textcolor{blue}{(\underbrace{\text{Total Profit of firms}}_\text{= total expenditure consumers} - \text{Total cost of firms})} \\
+=& \textcolor{red}{\text{Consumer Surplus}} + \textcolor{blue}{\text{Producer Surplus}}
+\end{aligned}$$
+
+* **Definition of an efficient allocation**:  
+When the benefit function (demand function) and each firm's cost function are defined, the feasible method of allocation which maximizes net surplus under these conditions is efficient.  
+
+* (How do we know market is efficient? -> first welfare theorem)  
+
+* *Important fact:* If, under a given allocation, there exists at least one pair of consumer and firm such that the marginal benefit of the consumer and the marginal cost of the firm is not equivalent, then net surplus is not maximized (firm can produce more/less and consumer can consume more/less until their marginal costs and benefits are equivalent).  
+Proof. 
+\[\begin{aligned} 
+\text{If } D'(y) > C'(y):& \\
+& D(y+1) - D(y) > C(y+1) - C(y) \\
+&\implies \text{Total Surplus increases by } \Delta D(y) - \Delta C(y) \text{ when } y \to y + 1\\
+\text{If } D'(y) < C'(y):& \\
+& D(y) - D(y-1) < C(y) - C(y-1) \\
+&\implies \text{Total Surplus increases by } \Delta C(y) - \Delta 
+D(y) \text{ when } y \to y - 1
+\end{aligned}\]
+
+* By taking the contraposition to the above claim, we find that if an allocation is to be efficient, then $\forall i, j:$ 
+$$MU_i = MC_j$$
+
+* This condition is not dependent on the existence of a market or on the rationality of its actors. It can be applied **to any method of distribution**.  
+
+* The efficiency of markets (under certain assumptions stated \hyperlink{foo}{here}) can be derived thus:  
+1. In a competitive market, $p = MU$ and $p = MC$\footnote{Costs factored into this equalization include opportunity cost}.  
+2. All consumers/producers face the same prices (*Law of one price*)  
+3. $\implies$ marginal benefit and marginal cost between all consumers and firms are equal.  
+
+# Imperfect Competition  
+
+## The inefficiencies of monopolies  
+
+* Monopolists cease production when $MR = p$, and since they are not price takers, $MR > MC$ (they can control price, endogenizing price and demand into the marginal revenue maximization problem).  
+* Since consumers still consume to the point where $MU = p$, as a result $MU > MC$, which defies the conditions for efficiency: $p = MU = MC$.  
+* The inefficiencies of monopolies, duopolies, oligopolies comes from insufficient production.  
+* Since taxes only further decrease production, how do we restore efficiency in the case of imperfect competition?  
+* \text{独占禁止法：「優越的地位の濫用」}  
+* Types of monopolies:  
+  + Firm taking advantage of a newly emerged market that other firms have not entered yet. These monopolies will resolve over time and the lucrative initial period inspires innovative incentive (to discover new markets).  
+  + **Natural monopoly**: a monopoly in an industry in which high infrastructural costs and other barriers to entry relative to the size of the market give the largest supplier in an industry, often the first supplier in a market, an overwhelming advantage over potential competitors.
+
+## Natural monopolies  
+* **Economy of Scale**:
+  + Economies with increasing returns to scale (marginally decreasing Average Total Cost).  
+* Natural monopolies are typically borne of Fixed Costs, and is scaled commensurately with the size of the fixed cost relative to variable cost (initial infrastructure investment as seen in electricity, mobile carriers, railroads, television, pharmaceutical, etc).  
+* Newcomers cannot make up for their initial investment.  
+* **Counteractive Policies:**  
+  + Price regulations by the government (e.g. railroad fees, highway fees).  
+  + Breaking up the economy of scale into subgroups and deregulating the smaller subgroups less scaled in nature \footnote{smaller fixed cost relative to variable cost} (e.g. the electricity industry, keeping regulations on transmission of electricity but deregulating generation and distribution).  
+  In the west, it is typical to separate railroad enterprises into rental of railroad infrastructure (regulated) and train cars/transportation and management of cars (deregulated).  
+  In Japan, the construction of highways is a government enterprise while management and administration is private (the right to which is auctioned off).  
+* **Network Externalities:**  
+  + the phenomenon by which the value or utility a user derives from a good or service depends on the number of users of compatible products. Network effects are typically positive, resulting in a given user deriving more value from a product as other users join the same network (e.g. phones, SNS, OS, Office Applications, digital currency).  
+  + Network externalities do not necessarily imply an efficiency problem (imperfect competition\footnote{i.e. the distortion of prices}) but they can be if the dominating firm distorts their prices.  
+  
+# Excise Tax, Subsidies  
+
+## Price Elasticity of Demand:  
+* sensitivity of demand to price fluctuations
+* the shape of the curve of the demand function.  
+* Price Elasticity of Demand looks at demand (x-axis) in response to price (y-axis), so the y-axis comes first! -> Cannot simply take the derivative to embody this relationship.  
+* Furthermore, elasticity eliminates dependency on units (liters, dozens) and represents the demand function in percentage, making different demand functions for differeing goods comparable.  
+
+$$\textbf{Price Elasticity} = \frac{\frac{D(p_1) - D(p_0)}{D(p_0)}}{\frac{p_1 - p_0}{p_0}}$$
+The variability (slope) of demand divided by the variability (slope) of price.  
+Or, equally, 
+$$D'(p)\frac{p}{D}; \;\;\frac{dD}{dp}\cdot\frac{p}{D}; \;\;\frac{\Delta D}{D}/\frac{\Delta p}{p}$$
+  
+## DWL of tax  
+* The loss of trade that would have occurred in the absence of tax causes deadweight loss.
+* Why?: Taxes cause a gap in the price consumer's face and the price producer's face -> meddling with information.
+* Since tax burden is transferred onto consumers, consumers face a higher tax and stop buying when $MU$ equals the price they face. However, this $MU$ can still be higher than firms' $MC$, which would make for a Pareto improvement if additional goods were sold in the absence of tax.
+* 
+
+  
+
+
+
+# Possible Questions  
+
+* 経済分析では供給曲線，需要曲線の傾きが重要であり，特に弾力性を図るためには曲線全体の概況を知る必要がある．  
+
+
+
+
+
+
+
+
+
+

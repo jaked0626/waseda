@@ -1,0 +1,303 @@
+---
+title: 時系列分析 第2回
+subtitle: 時系列分析の基礎概念2
+author: Kenichiro Tamaki
+date: 2022年4月18日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+csl: apa.csl
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# 1. 時系列分析の基礎概念 {-}
+
+## 1.2 定常性 {-}
+
+> **定義1.1 (弱定常性, p.8)**
+任意の $t$ と $k$ に対して, 
+\begin{align*}
+& E [y_{t}] = \mu \\
+& \text{Cov} (y_{t}, y_{t - k}) = E [(y_{t} − \mu) (y_{t - k} − \mu)] = \gamma_{k}
+\end{align*}
+が成立する場合, 過程は<span style="color: rgb(255, 0, 0);">弱定常 (weak stationary)</span> という.
+
+- 平均 $\mu$ は時点 $t$ に依存せず一定である
+
+- 分散 $\gamma_{0}$ は時点 $t$ に依存せず一定である
+
+- 自己共分散 $\gamma_{k}$ は時点 $t$ に依存せず, ラグ $k$ のみに依存する
+$$
+\gamma_{-k} = \text{Cov} (y_{t}, y_{t + k}) = \text{Cov} (y_{t + k}, y_{t}) = \text{Cov} (y_{t + k}, y_{t + k - k}) = \gamma_{k}
+$$
+
+- 自己相関係数
+$$
+\rho_{k} = \dfrac{\gamma_{k, t}}{\sqrt{\gamma_{0, t}}\sqrt{\gamma_{0, t - k}}} = \dfrac{\gamma_{k}}{\gamma_{0}}
+$$
+は時点 $t$ に依存せず, ラグ $k$ のみに依存する
+$$
+\rho_{-k} = \rho_{k}
+$$
+
+> **定義1.2 (強定常性, p.9)**
+任意の $t$ と $k$ に対して, $(y_{t}, y_{t + 1}, \dots, y_{t + k})$ の同時分布が同一となる場合, 過程は<span style="color: rgb(255, 0, 0);">強定常 (strong stationary)</span> という.
+
+定常性とは, 統計的な性質が時点に依存せず, 時点の差 (ラグ) のみに依存することである.
+
+- 弱定常と強定常の違い
+
+  - 弱定常は平均と共分散に関する性質であり, 検証が可能
+
+  - 強定常は同時分布に関する性質であり, 検証が困難
+
+- 弱定常と強定常の関係
+
+  - 分散が存在する (有限) 場合, 強定常 ⇒ 弱定常
+
+  - 正規過程の場合, 強定常 ⇔ 弱定常
+
+多くの場合, 弱定常性を仮定する. 経済・ファイナンス分野において, データそのものが定常性を満たすことは少ないが, 適切に変換すると定常性を満たすことが多い.
+
+- 図1.1 (p.2) 代表的な経済・ファイナンス時系列データ
+
+  - トレンドがある, ばらつきが異なる
+
+  - <span style="color: rgb(255, 0, 0);">定常性は仮定できない</span>
+
+- 図1.2 (p.3) 代表的な経済・ファイナンス時系列データの変化率
+
+  - トレンドはない, ばらつきはほぼ同じ
+
+  - <span style="color: rgb(255, 0, 0);">定常性を仮定できる</span>
+
+  - 厳密には定常性の検定 (5.2 単位根検定) を行う
+
+## 1.3 ホワイト・ノイズ {-}
+
+> **定義1.3 (iid系列, p.11)**
+各時点のデータが互いに独立でかつ同一の分布に従う系列を<span style="color: rgb(255, 0, 0);">iid系列</span>という.
+
+- iid = independent and identically distributed
+
+- 表記
+
+  - $\varepsilon_{t} \sim \text{iid } N(\mu, \sigma^{2})$  ($\varepsilon_{t}$ はiid系列であり, 平均 $\mu$, 分散 $\sigma^{2}$ の正規分布に従う)
+
+  - $\varepsilon_{t} \sim \text{iid } (\mu, \sigma^{2})$ ($\varepsilon_{t}$ はiid系列であり, 平均 $\mu$, 分散 $\sigma^{2}$ であるが分布は仮定しない)
+
+> **定義1.4 (ホワイト・ノイズ, p.12)**
+任意の時点 $t$ において 
+\begin{align*}
+& E [\varepsilon_{t}] = 0 \\
+& \gamma_{k} = E [\varepsilon_{t} \varepsilon_{t - k}] =
+\begin{cases}
+\sigma^{2}, & k = 0 \\
+0, & k \neq 0
+\end{cases}
+\end{align*}
+が成立する場合, $\varepsilon_{t}$ を<span style="color: rgb(255, 0, 0);">ホワイト・ノイズ (white noise)</span> という.
+
+- iid系列は独立であり, ホワイト・ノイズは無相関である
+
+  - 独立 ⇒ 無相関
+
+  - 正規分布の場合, 独立 ⇔ 無相関
+
+- 表記
+
+  - $\varepsilon_{t} \sim \text{WN} (\sigma^{2})$ ($\varepsilon_{t}$ は ホワイト・ノイズであり, 分散 $\sigma^{2}$ である)
+
+ホワイト・ノイズは時系列モデルの<span style="color: rgb(255, 0, 0);">撹乱項 (innovation, disturbance term)</span> に用いる. 
+
+- 図1.3 (p.14) (1.8) のモデルから発生させたデータ
+
+## 1.4 自己相関の検定 {-}
+
+弱定常性を仮定する.
+
+- 自己相関がある場合, 時系列モデルや時系列分析の手法を用いる
+
+- 自己相関が無い場合, 通常の統計学・計量経済学の手法を用いる
+
+自己相関の有無を仮説検定を用いて判断する.
+
+**標本統計量**
+
+- 標本平均
+$$
+\bar{y} = \frac{1}{T} \sum_{t = 1}^{T} y_{t}
+$$ 
+
+- 標本自己共分散
+$$
+\hat{\gamma}_{k} = \frac{1}{T} \sum_{t = k + 1}^{T} (y_{t} - \bar{y}) (y_{t - k} - \bar{y}), \quad k = 0, 1, 2, \dots
+$$ 
+
+- 標本自己相関係数
+$$
+\hat{\rho}_{k} = \frac{\hat{\gamma}_{k}}{\hat{\gamma}_{0}}, \quad k = 1, 2, 3, \dots
+$$ 
+
+**自己相関の検定**
+
+仮説検定 $H_{0}: \rho_{k} = 0$ v.s. $H_{1}: \rho_{k} \neq 0$ は
+$$
+\hat{\rho}_{k} \overset{d}{\rightarrow} N \left( 0, \frac{1}{T} \right)
+$$
+を用いて $k$ 次自己相関について検定を行う. ここで, $\overset{d}{\rightarrow}$ は分布収束である.
+
+**かばん検定 (portmanteau test)**
+
+上記の検定は, あるラグ $k$ に対して自己相関が $0$ かどうか別々に検定を行う.
+
+- 無相関 ⇔ 全てのラグに対して自己相関が $0$ (検証は困難)
+
+ある $m$ に対して, 次の仮説検定を行う.
+$$
+H_{0}: \rho_{1} = \rho_{2} = \cdots = \rho_{m} = 0 \text{ v.s. } H_{1}: \text{ 少なくとも } １ \text{ つの } k \text{ } (1 \le k \le m) \text{ において } \rho_{k} \neq 0
+$$
+
+- @box1970distribution, @ljung1978measure
+$$
+Q(m) = T (T + 2) \sum_{k = 1}^{m} \frac{\hat{\rho}_{k}}{T - k} \overset{d}{\rightarrow} \chi^{2} (m)
+$$
+を用いて検定を行う
+
+- $m$ の選択は難しい
+
+  - $m \approx \log T$ は目安
+
+  - $m$ が小さい場合, 高次の自己相関を考慮しない
+
+  - $m$ が大きい場合, 検出力が小さい傾向がある
+
+複数の $m$ に対してかばん検定を行い総合的に判断する.
+
+<p><br></p>
+
+# 模擬データの分析例 {-}
+
+## パッケージ stargazer {-}
+
+本パッケージを用いて記述統計量を求める. まずは, パッケージをインストールする. [Tools] → [Install Packages...] においてパッケージ名 (stargazer) を入力する. 次でも良い.
+
+```{r eval = FALSE}
+install.packages("stargazer") # パッケージをインストール
+```
+
+インストールしたパッケージを使用するには, 毎回読み込む必要がある.
+
+```{r}
+library(stargazer) # パッケージを読み込む
+```
+
+## 模擬データの作成 {-}
+
+独立に標準正規分布 (standard normal distribution) に従う模擬データを作成する.
+
+```{r}
+T <- 200 # 標本数
+x <- rnorm(T) # 標準正規分布の模擬データを作成
+x <- data.frame(x) # データフレームに変換
+head(x, 5) # 最初の5個を表示
+tail(x, 5) # 最後の5個を表示
+```
+
+## 記述統計量 {-}
+
+記述統計量は次である.
+
+```{r}
+stargazer(x, # 標本
+          type = "text", # 出力形式
+          summary = TRUE) # 記述統計量
+```
+
+- N = 標本数, Mean = 平均, St. Dev. = 標準偏差, Min = 最小値, Max = 最大値
+
+## 時系列プロットとコレログラム {-}
+
+模擬データの時系列とコレログラム (自己相関関数) をプロットする.
+
+```{r}
+ts.plot(x) # 時系列プロット
+acf(x) # コレログラム
+```
+
+図中の点線は, 自己相関が $0$ であるという帰無仮説のもとでの有意水準 $5 \%$ の棄却限界値を表す. 各ラグにおいて自己相関があるとは判断できない.
+
+## かばん検定 {-}
+
+```{r}
+(m <- round(log(T))) # ラグ m の目安
+```
+
+これより, ラグ $`r m`$ のかばん検定を行う.
+
+```{r}
+(res <- Box.test(x, # 標本
+                 lag = m, # ラグ
+                 type = "Ljung-Box")) # Ljung and Box (1978)
+```
+
+検定統計量の値は $Q(`r m`) = `r signif(res$statistic, 3)`$, $p$値は $`r signif(res$p.value, 3)`$ である. さらに, ラグ $`r 2 * m`$, $`r 3 * m`$ に対してかばん検定を行う.
+
+```{r}
+Box.test(x, lag = 2 * m, type = "Ljung-Box") # ラグ 2m のかばん検定
+Box.test(x, lag = 3 * m, type = "Ljung-Box") # ラグ 3m のかばん検定
+```
+
+全てにおいて$p$値が $0.05$ より大きいので, 有意水準 $5 \%$ で帰無仮説を棄却できない. つまり, 自己相関があるとは判断できない.
+
+ラグ $`r m`$, $`r 2 * m`$, $`r 3 * m`$ に対するかばん検定の結果の表を作成する.
+
+**関数の作成**
+
+```{r}
+port <- function(x, lag) { # x = 標本, lag = ラグ
+  res <- Box.test(x, lag = lag, type = "Ljung-Box") # かばん検定
+  # ラグ, 検定統計量の値, 自由度, p値
+  return(c(lag, res$statistic, res$parameter, res$p.value))
+}
+```
+
+**表の作成**
+
+```{r}
+lag <- m * (1:3) # ラグ m, 2m, 3m
+res <- sapply(lag, port, x = x) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "独立な模擬データに対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+ラグ $1$ から $`r 3 * m`$ に対するかばん検定の結果の表を作成したい場合は次のようにすれば良い.
+
+```{r}
+lag <- 1:(3 * m) # ラグ 1, ..., 3m
+res <- sapply(lag, port, x = x) # x に対して各 lag の port を計算
+res <- t(res) # 転置
+# 表を作成
+knitr::kable(res, # 計算結果
+             digits = c(0, 2, 0, 4), # 少数点以下の最大表示桁数
+             col.names = c("$m$", "$Q(m)$", "自由度", "$p$値"), # 列名
+             caption = "独立な模擬データに対するかばん検定", # 表題
+             format.args = list(scientific = FALSE)) # 指数表記をしない
+```
+
+# 参考文献 {-}

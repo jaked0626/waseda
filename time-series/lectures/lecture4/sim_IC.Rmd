@@ -1,0 +1,241 @@
+---
+title: Information Criterion (AIC and BIC)
+# subtitle:
+author: Kenichiro Tamaki
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# 関数の作成
+
+## AIC と BIC
+
+```{r}
+ic.ar <- function(x, L) { # x = 標本, L = 最大次数
+  res <- matrix(0, L + 1, 2) # 結果を代入する変数
+
+  for (p in 0:L) {
+    # AR(p) で推定
+    est <- arima(x, # 標本
+                 order = c(p, 0, 0)) # AR 次数
+    res[p + 1, 1] <- AIC(est) # AR(p) の AIC
+    res[p + 1, 2] <- BIC(est) # AR(p) の BIC
+  }
+
+  res <- cbind(0:L, res) # 次数を追加
+  colnames(res) <- c("p", "AIC", "BIC") # 列名
+
+  return(res)
+}
+```
+
+出力例
+
+```{r}
+T <- 100 # 標本数
+p <- 1; ar.c <- 0.5 # AR 次数; AR 係数
+L <- p + 3 # 最大次数
+# AR(p) の模擬データ
+x <- arima.sim(n = T, # 標本数
+               list(order = c(p, 0, 0), ar = ar.c)) # AR 次数, AR 係数
+(res <- ic.ar(x, L)) # AIC と BIC
+```
+
+```{r}
+res <- c(which.min(res[,2]), which.min(res[,3])) # AIC と BIC の最小値の位置
+names(res) <- c("AIC", "BIC") # 名
+res
+```
+
+## シミュレーション
+
+```{r}
+ic.sim <- function(T, p, ar.c, L) { # T = 標本数, p = AR 次数, ar = AR 係数, L = 最大次数
+  # AR(p) の模擬データ
+  x <- arima.sim(n = T, # 標本数
+                 list(order = c(p, 0, 0), ar = ar.c)) # AR 次数, AR 係数
+  res <- ic.ar(x, L) # AIC と BIC
+  res <- c(which.min(res[,2]), which.min(res[,3])) # AIC と BIC の最小値の位置
+  names(res) <- c("AIC", "BIC") # 名
+
+  return(res) 
+}
+```
+
+出力例
+
+```{r}
+ic.sim(T, p, ar.c, L) # AIC と BIC の最小値の位置
+```
+
+## 選択確率
+
+```{r}
+ic.res <- function(x, L) { # x = シミュレーション結果, L = 最大次数
+  res <- matrix(0, L + 1, 2) # 結果を代入する変数
+
+  for(p in 0:L) {
+    res[p + 1, 1] <- sum(x[1,] == p + 1) # AIC が p を選択する数
+    res[p + 1, 2] <- sum(x[2,] == p + 1) # BIC が p を選択する数
+  }
+
+  res <- 100 * res / length(x[1,]) # 選択確率 (%)
+  res <- cbind(0:L, res) # 次数を追加
+  colnames(res) <- c("p", "AIC", "BIC") # 列名
+
+  return(res)
+}
+```
+
+出力例
+
+```{r}
+n.rep <- 10^(1) # シミュレーション回数
+(x <- replicate(n.rep, ic.sim(T, p, ar.c, L))) # シミュレーションの実行
+ic.res(x, L) # 選択確率
+```
+
+<p><br></p>
+
+# シミュレーション
+
+## 回数
+
+```{r}
+n.rep <- 10^(4)
+```
+
+## AR(1)
+
+**パラメータ**
+
+```{r}
+p <- 1; ar.c <- 0.5 # AR 次数; AR 係数
+L <- p + 3 # 最大次数
+```
+
+**実行**
+
+```{r}
+T1 <- 100 # 標本数
+system.time(x1 <- replicate(n.rep, ic.sim(T1, p, ar.c, L))) # 計算時間
+T2 <- 200 # 標本数
+system.time(x2 <- replicate(n.rep, ic.sim(T2, p, ar.c, L))) # 計算時間
+```
+
+**選択確率**
+
+標本数 `r T1`
+
+```{r}
+res <- ic.res(x1, L) # 選択確率
+# 表を作成
+col.names <- c("$p$", "AIC", "BIC") # 列名
+caption <- "AIC と BIC の選択確率 (%)"
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```
+
+標本数 `r T2`
+
+```{r}
+res <- ic.res(x2, L) # 選択確率
+# 表を作成
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```
+
+## AR(2)
+
+**パラメータ**
+
+```{r}
+p <- 2; ar.c <- c(0.5, 0.3) # AR 次数; AR 係数
+L <- p + 3 # 最大次数
+```
+
+**実行**
+
+```{r}
+T1 <- 150 # 標本数
+system.time(x1 <- replicate(n.rep, ic.sim(T1, p, ar.c, L))) # 計算時間
+T2 <- 300 # 標本数
+system.time(x2 <- replicate(n.rep, ic.sim(T2, p, ar.c, L))) # 計算時間
+```
+
+**選択確率**
+
+標本数 `r T1`
+
+```{r}
+res <- ic.res(x1, L) # 選択確率
+# 表を作成
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```
+
+標本数 `r T2`
+
+```{r}
+res <- ic.res(x2, L) # 選択確率
+# 表を作成
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```
+
+## AR(3)
+
+**パラメータ**
+
+```{r}
+p <- 3; ar.c <- c(0.5, 0.3, -0.2) # AR 次数; AR 係数
+L <- p + 3 # 最大次数
+```
+
+**実行**
+
+```{r}
+T1 <- 200 # 標本数
+system.time(x1 <- replicate(n.rep, ic.sim(T1, p, ar.c, L))) # 計算時間
+T2 <- 400 # 標本数
+system.time(x2 <- replicate(n.rep, ic.sim(T2, p, ar.c, L))) # 計算時間
+```
+
+**選択確率**
+
+標本数 `r T1`
+
+```{r}
+res <- ic.res(x1, L) # 選択確率
+# 表を作成
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```
+
+標本数 `r T2`
+
+```{r}
+res <- ic.res(x2, L) # 選択確率
+# 表を作成
+knitr::kable(res, # 選択確率
+             col.names = col.names, # 列名
+             caption = caption) # 表題
+```

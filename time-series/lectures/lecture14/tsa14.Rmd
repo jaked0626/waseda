@@ -1,0 +1,160 @@
+---
+title: 時系列分析 第 14 回
+subtitle: 回帰分析
+author: Kenichiro Tamaki
+date: 2022 年 7 月 11 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+<p><br></p>
+
+# 時系列回帰分析
+
+時系列データに対する回帰分析を考える. 
+$$
+y_{t} = \alpha + \beta_{1} x_{t, 1} \dots + \beta_{k} x_{t, k} + u_{t} \quad (t = 1, \dots, T)
+$$
+
+誤差項に系列相関が存在する場合, 最小二乗推定量の有効性は成り立たない. 特に, 通常の $t$ 統計量, $F$ 統計量, LM 統計量を用いて仮説検定を行うことは妥当でない.
+
+## 系列相関の検定
+
+誤差項 $u_{t}$ が AR$(1)$ に従う場合は DW (Durbin--Watson) 検定を用いるが, 誤差項が次の AR$(p)$ に従う場合は, Breusch--Godfrey 検定を用いる.
+$$
+u_{t} = \rho_{1} u_{t - 1} + \dots + \rho_{p} u_{t - p} + \varepsilon_{t}
+$$
+
+1. 最小二乗法を用いて残差 $\hat{u}_{t}$ を求める
+
+1. 次の回帰式に対して, 最小二乗法を用いて決定係数 $R^{2}$ を求める
+$$
+\hat{u}_{t} = \gamma_{0} + \gamma_{1} x_{t, 1} + \dots + \gamma_{k} x_{t, k} + \rho_{1} \hat{u}_{t - 1} + \dots + \rho_{p} \hat{u}_{t - p} + \varepsilon_{t} \quad (t = p + 1, \dots, T)
+$$
+
+1. 帰無仮説 $H_{0}: \rho_{1} = \dots = \rho_{p} = 0$ に対して, LM (Lagrange multiplier) 検定を行う
+$$
+\text{LM} = (T - p) R^{2} \overset{d}{\rightarrow} \chi^{2} (p)
+$$
+
+## 推定
+
+### 係数 (FGLS, feasible generalized least squares)
+
+誤差項に系列相関が存在する場合, 最小二乗推定量の有効性は成り立たない. よって, 有効性が成り立つ推定方法を紹介する. 
+
+ここでは, 誤差項は AR$(1)$ に従うとする.
+
+$$
+\begin{align*}
+& y_{t} = \alpha + \beta_{1} x_{t, 1} \dots + \beta_{k} x_{t, k} + u_{t} \\
+& \rho  y_{t - 1} = \rho \alpha + \rho \beta_{1} x_{t - 1, 1} \dots + \rho \beta_{k} x_{t - 1, k} + \rho u_{t - 1}
+\end{align*}
+$$
+であるから, 両辺をそれぞれ引くと次である.
+$$
+\tilde{y}_{t} = \alpha (1 - \rho) + \beta_{1} \tilde{x}_{t, 1} \dots + \beta_{k} \tilde{x}_{t, k} + \varepsilon_{t} \quad (t = 2, \dots, T)
+$$
+ここで, $\tilde{x}_{t, j} = x_{t, j} - \rho x_{t - 1, j}$ $(j = 1, \dots, k)$ である. 誤差項 $\varepsilon_{t}$ に系列相関はないので, 最小二乗推定量の有効性は成り立つ. しかし, 一般的に $\rho$ は未知であるから, 次の手順を行う.
+
+1. 最小二乗法を用いて残差 $\hat{u}_{t}$ を求める
+
+1. 次の AR$(1)$ に対して, 最小二乗法を用いて係数 $\hat{\rho}$ を求める
+$$
+u_{t} = \rho_{1} u_{t - 1} + \varepsilon_{t}
+$$
+
+1.  次の回帰式に対して, 最小二乗法を用いて回帰係数 $\hat{\alpha}, \hat{\beta}_{1}, \dots, \hat{\beta}_{k}$ を求める
+$$
+\tilde{y}_{t} = \alpha (1 - \rho) + \beta_{1} \tilde{x}_{t, 1} \dots + \beta_{k} \tilde{x}_{t, k} + \varepsilon_{t} \quad (t = 2, \dots, T)
+$$
+
+### 標準誤差 (Newey-–West estimator)
+
+誤差項の分散に不均一性がある場合は White の修正を用いるが, 分散の不均一性と系列相関が存在する場合は, Newey-–West の修正を用いる. Newey-–West HAC (heteroskedasticity and autocorrelation consistent) ともいう.
+
+# 分析例
+
+## パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(lmtest) # Breusch–Godfrey test
+library(nlme) # FGLS
+library(sandwich) # HAC estimator
+```
+
+## データ
+
+ここでは, 次のデータを用いる.
+
+- 東京電力　過去の電力使用実績データ
+https://www.tepco.co.jp/forecast/html/download-j.html
+
+- 気象庁　過去の気象データ・ダウンロード
+https://www.data.jma.go.jp/gmd/risk/obsdl/
+
+- 2021年4月1日～2021年9月30日の日次データ
+
+```{r}
+juyo <- read.csv("juyo.csv", header = TRUE) # 電力使用実績
+temp <- read.csv("temp.csv", header = TRUE) # 気温
+head(juyo)
+head(temp)
+```
+
+土日の曜日ダミー変数を作成する. 
+```{r}
+temp$sat <- ifelse(temp$week == "土", 1, 0) # 土曜ダミー
+temp$sun <- ifelse(temp$week == "日", 1, 0) # 日曜ダミー
+```
+
+```{r}
+d <- seq.int(from = 15, by = 24, length.out = 183) # 14:00 の位置
+juyod <- juyo$elec[d] # 14:00 の電力
+tempm <- temp$max # 最高気温
+ts.plot(juyod) # 電力の時系列プロット
+ts.plot(tempm) # 気温の時系列プロット
+acf(juyod) # 電力のコレログラム
+acf(tempm) # 気温のコレログラム
+```
+
+```{r}
+elec <- cbind(juyod, tempm, temp[,6:7]) # データの結合
+names(elec) <- c("elec", "temp","sat", "sun") # 名称の変更
+head(elec)
+```
+
+## 回帰分析
+
+### LS
+
+```{r}
+M1 <- lm(elec ~ ., data = elec) # 回帰分析
+summary(M1) # 結果
+acf(M1$residuals) # 残差のコレログラム
+ar(M1$residuals)$aic # 残差の AIC
+bgtest(M1, order = 3) # Breusch–Godfrey test
+coeftest(M1, vcov = vcovHAC) # HAC estimator
+```
+
+### FGLS
+
+```{r}
+M1f <- gls(elec ~ ., data = elec, correlation = corARMA(p = 3))
+summary(M1f)
+```

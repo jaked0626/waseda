@@ -1,0 +1,155 @@
+---
+title: "Homework Assignment 02"
+subtitle: "Numerical Statistics Fall, 2022"
+author: Jake Underland - 1A193008
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: pdflatex
+    toc: false
+    extra_dependencies: ["amsmath", "xcolor", "bm"]
+    keep_tex: yes
+  html_document:
+    toc: false
+    toc_depth: 3
+    toc_float: yes
+  word_document:
+    toc: false
+    toc_depth: '3'
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE, echo = FALSE}
+library(reticulate)
+```
+
+
+# 1.  
+ Consider a stock that grows by 12\% in year one, declines by 8\% in
+year two, declines by 3\% in year three and grows by 42\% in year four. In this case calculate the average growth rate of the stock, and then express it in the form of a decimal to the second decimal places. (When calculating the fourth root of a number using a calculator, you need only apply the square root twice.) (2 points)  
+
+**Solution**:  
+
+$$\sqrt[4]{(1 + 0.12) \times (1 - 0.08) \times (1 - 0.03) \times (1 + 0.42)} \approx 1.09\dots \Box$$
+
+```{r}
+sqrt(sqrt(1.12 * (1 - 0.08) * (1 - 0.03) * (1 + 0.42)))
+```
+
+# 2.  
+
+Suppose we want to make a histogram based on a data $x_1, x_2, \dots, x_{128}$
+using the Sturges rule, where we expect the histogram to be symmetrical. In this case find the number of classes, $k$, in the corresponding frequency distribution. (2 points)  
+  
+
+**Solution**: 
+  
+$$ k \approx 1 + \log_2 128 = 8\dots \Box$$
+```{r}
+1 + log(128, 2)
+```
+
+# 3.  
+
+Consider the linear regression of $y$ on $x$ based on a data:
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline 
+$x$ & 0 & 1 & 2 & 3 & 4 \\
+\hline 
+$y$ & 2 & 1 & 4 & 3 & 5 \\
+\hline
+\end{tabular}
+Using the Pearson’s correlation coefficient $r_{xy}$, calculate the coefficient of determination $R^2$ of the regression, and then express it as an irreducible fraction. (7 points)   
+  
+**Solution**: 
+  
+\begin{align*} \bar{x} &= \frac{(0 + 1 + 2 + 3 + 4)}5  =2\\
+\bar{y} &= \frac{(2 + 1 + 4 + 3 + 5)}5 = 3
+\end{align*}
+
+$$\begin{array}{ccccccc}
+x & y & x - \bar{x} & y - \bar{y} & (x - \bar{x})(y - \bar{y}) & (x - \bar{x})^2 & (y - \bar{y})^2 \\
+\hline 
+0 & 2 & -2 & -1 & 2 & 4 & 1 \\
+1 & 1 & -1 & -2 & 2 & 1 & 4 \\
+2 & 4 & 0  &  1 & 0 & 0 & 1 \\
+3 & 3 & 1  &  0 & 0 & 1 & 0 \\
+4 & 5 & 2  &  2 & 4 & 4 & 4 \\
+\hline 
+\text{Total} && 0 & 0 & 8 & 10 & 10
+\end{array}$$
+
+\hfill$\underline{\implies r_{xy} = \frac{8}{\sqrt{10\times 10}} = \frac{4}{5}} \ldots\Box$
+
+# 4.  
+
+Suppose that six people, a, b, c, d, e and f, entered
+their paintings in an exhibition, and judges X and Y scored the paintings within the range of 0 to 50 points and 0 to 100 points, respectively:
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+&a&b&c&d&e&f\\
+\hline
+X&50&45&25&30&35&10\\
+\hline
+Y&96&75&88&54&29&42 \\
+\hline
+\end{tabular}
+In this case, calculate the Kendall rank correlation coefficient $r_k$, and then express it as an irreducible fraction. (9 points)  
+  
+**Solution**: 
+
+The above data points ranked are as below: 
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+&a&b&c&d&e&f\\
+\hline
+X&6&5&2&3&4&1\\
+\hline
+Y&6&4&5&3&1&2 \\
+\hline
+\end{tabular}
+
+Since there are 6 data points, the sum of the number of concordant pairs ($C$) and discordant pairs ($D$) is $C + D = {6\choose 2} = \frac{6\cdot 5}{2} = 15$. I count the number of concordant and discordant pairs below, using the given definition: 
+
+```{python}
+def countCD(data):
+  C = D = 0
+  for i, tup1 in enumerate(data[:-1]):
+    for tup2 in data[i+1:]:
+      if (tup1[0] > tup2[0] and tup1[1] > tup2[1]) \
+      or (tup1[0] < tup2[0] and tup1[1] < tup2[1]):
+        C += 1
+      else:
+        D += 1
+  return C, D
+```
+
+
+\newpage 
+
+```{python}
+data = [(6, 6), (5, 4), (2, 5), (3, 3), (4, 1), (1, 2)]
+
+print "Number of concordant pairs is:", countCD(data)[0], \
+"\nNumber of discordant pairs is:", countCD(data)[1]
+```
+
+Thus, using the formula for the Kendall rank correlation coefficient, 
+$$r_k = \frac{C - D}{C + D} = \frac{10 - 5}{15} = \frac{1}{3}\dots \Box$$
+
+
+
+
+
+
+
+
+
+
+
+
+

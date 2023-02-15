@@ -1,0 +1,149 @@
+---
+title: "Class 4 Practice"
+author: "Jake Underland"
+date: "6/9/2020"
+output: html_document
+---
+
+# 1. Read Data
+income <- read_csv("data/income.csv)
+```{r}
+income <- read_csv("data/income.csv")
+```
+```{r}
+glimpse(income)
+```
+
+# 2. Making a Histogram
+
+```{r}
+hist(income$height, freq = FALSE,
+     xlab = "Height",
+     ylab = "Density",
+     main = "Distribution of Height")
+```
+
+```{r}
+hist(income$height, freq = FALSE,
+     ylim = c(0, 0.06),
+     xlab = "Height",
+     ylab = "Density",
+     main = "Distribution of Height")
+```
+
+```{r}
+hist(income$height, freq = FALSE,
+          ylim = c(0, 0.06),
+     breaks = seq(from = 135, to = 185, by = 5),
+     xlab = "Height",
+     main = "Distribution of Height")
+
+# add a text label at (x, y) = (168, 0.047)
+text(x = 168, y = 0.047, "median = 162", col = "magenta3")  # 色は colors() から選べる
+
+# add a vertical line representing median
+abline(v = median(income$height), lty = "dashed", lwd = 1, col = "magenta3")
+```
+
+
+
+# 2. Scatter Plot
+
+```{r}
+ggplot(income, aes(height, weight)) +
+  geom_point()
+```
+
+```{r}
+ggplot(income, aes(height, weight)) + 
+  geom_point() +
+  stat_smooth(method = lm, level = 0.95)
+```
+
+
+# 3. Line graph 
+
+install.packages("gapminder")
+library("DT")
+library("tidyverse")
+library(gapminder)
+
+theme_set(theme_classic(base_size = 10, base_family = "HiraginoSans-W3"))  #文字化けを防止
+
+glimpse(gapminder)
+summary(gapminder)
+```{r}
+glimpse(gapminder)
+```
+
+```{r}
+summary(gapminder)
+```
+
+```{r}
+table(gapminder$country)
+```
+
+```{r}
+with(gapminder, table(country, lifeExp))
+```
+
+
+```{r}
+jpn.chi <- gapminder %>% 
+  dplyr::filter(country == "Japan" | country == "China") %>% 
+  dplyr::select(year, country, lifeExp)
+
+```
+
+```{r}
+jpn.chi
+```
+
+```{r}
+ggplot(jpn.chi, aes(x=year, y = lifeExp, color = country)) +
+  geom_point()+
+  geom_line()+
+  ggtitle("Life Expectancy: Japan and China 1952-2007")
+```
+
+
+
+
+```{r}
+jpn.syr.zimb <- gapminder %>%
+  dplyr::filter(country == "Japan" | country == "Syria" | country == "Zimbabwe") %>%
+  dplyr::select(year, country, lifeExp)
+```
+```{r}
+jpn.syr.zimb
+```
+
+```{r}
+ggplot(jpn.syr.zimb, aes(x = year, y = lifeExp, color = country))+
+  geom_point()+
+  geom_line()+
+  ggtitle("Life Expectancy in Japan, Syria, and Zimababwe, 1952-2007")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

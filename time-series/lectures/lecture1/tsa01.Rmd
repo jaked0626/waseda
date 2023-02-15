@@ -1,0 +1,341 @@
+---
+title: 時系列分析 第1回
+subtitle: 時系列分析の基礎概念1
+author: Kenichiro Tamaki
+date: 2022年4月11日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+<p><br></p>
+
+# 1. 時系列分析の基礎概念 {-}
+
+## 1.1 時系列分析の基礎 {-}
+
+### 1.1.1 時系列分析の目的 {-}
+
+**時系列データ**
+
+- 時系列データ (time series data)
+
+  - <span style="color: rgb(255, 0, 0);">時間の推移とともに観測される</span>データ
+
+  - 例1: 2001年から2020年までの日本の年次名目GDP (観測数20)
+
+  - 例2: 2001年1月から2020年12月までの月次日経平均株価 (観測数240)
+
+- 横断面データ (cross section data)
+
+  - <span style="color: rgb(255, 0, 0);">ある1時点において観測される</span>データ
+
+  - 例1: 20カ国の2020年の実質GDP (観測数20)
+
+  - 例2: 1,000人の2020年の給与所得 (観測数1,000)
+
+- パネルデータ (panel data)
+
+  - 時系列と横断面をまとめたデータ
+
+  - 例1: 20カ国の2001年から2020年までの年次名目GDP
+
+  - 例2: 1,000人の2001年から2020年までの給与所得, 年齢, 最終学歴
+
+**時系列データのプロット**
+
+- 横軸に時間, 縦軸にデータの値をプロットする
+
+  - 図1.1 (p.2) 代表的な経済・ファイナンス時系列データ
+
+  - 図1.2 (p.3) 代表的な経済・ファイナンス時系列データの変化率
+
+**時系列データの特徴**
+
+- データの<span style="color: rgb(255, 0, 0);">順序 (観測時点)</span> に意味がある
+
+- 時系列データの変動要因
+
+  - 傾向変動 (トレンド, trend)
+
+    - 長期間に渡る1方向的な変動
+
+    - 例: 上昇傾向, 下降傾向
+
+  - 循環変動 (周期性, cycle)
+
+    - 周期が一定でなく, 中期的に繰り返される変動
+
+    - 例: 景気循環
+
+  - 季節変動 (季節性, seasonal)
+
+    - 周期が1年の変動 (周期が半年, 1週間などの変動も含まれる)
+
+    - 例: 気象 (気温, 天候), 制度 (決算, 休日)
+
+  - 不規則変動 (irregular)
+
+    - 上記以外で規則的でない変動
+
+    - 例: 災害, 駆け込み需要
+
+- データの過去・現在・未来に<span style="color: rgb(255, 0, 0);">相関 (自己相関)</span> がある
+
+**時系列データの分析**
+
+- 自己相関がある場合, 自己相関を考慮したモデルや分析手法を用いる ⇒ <span style="color: rgb(255, 0, 0);">時系列モデル, 時系列分析</span>
+
+- 自己相関が無い場合, 通常の統計学・計量経済学の手法を用いる
+
+自己相関がある場合でも, 通常と同じ手法が適用可能な場合もある. また, データそのものには自己相関があるが, 変換すると自己相関が無い場合もある.
+
+**時系列分析の目的**
+
+- 予測
+
+  - 経済成長率, 株価の変動幅
+
+  - 資産運用, リスク管理
+
+- 変数間の動学的関係の分析
+
+  - アメリカ金融市場のショックが日本金融市場に与える影響
+
+  - 金融・財政政策がGDPや金利に与える影響
+
+- 経済・ファイナンス理論の検証
+
+  - 効率的市場仮説
+
+  - 購買力平価仮説
+
+### 1.1.2 時系列データの種類 {-}
+
+**データの変換**
+
+時系列データそのものを<span style="color: rgb(255, 0, 0);">原系列</span>という. 原系列 $\{ y_{t} \}$ ではなく変換した系列を分析する場合も多い.
+
+- 標準化 (standardization, Z-score normalization)
+
+  - $\dfrac{y_{t} - \mu}{\sigma}$ (平均 $\mu$, 標準偏差 $\sigma$)
+
+  - 平均 $0$, 分散 $1$ に変換
+
+- 正規化 (min-max normalization)
+
+  - $\dfrac{y_{t} - \min (y_{t})}{\max (y_{t}) - \min (y_{t})}$
+
+  - 最小値 $0$, 最大値 $1$ に変換
+
+- <span style="color: rgb(255, 0, 0);">対数 (logarithm)</span>
+
+  - $\log y_{t}$
+
+  - ばらつきを制御するために用いられる
+
+- 差分 (difference)
+
+  - 差分: $\Delta y_{t} = y_{t} - y_{t - 1}$
+
+  - $d$ 階差分: $\Delta^{d} y_{t}$
+
+  - ラグ $d$ の差分: $y_{t} - y_{t - d}$
+
+- 変化率 (rate of change)
+
+  - $R_{t} = \dfrac{y_{t} - y_{t - 1}}{y_{t - 1}}$
+
+  - 収益率 (return), 成長率 (growth rate) ともいう
+
+- <span style="color: rgb(255, 0, 0);">対数差分 (log difference)</span>
+
+  - $r_{t} = \Delta \log y_{t} = \log y_{t} - \log y_{t - 1}$
+
+  - 対数収益率 (log return) ともいう
+
+- 季節調整 (seasonal adjustment)
+
+  - 季節変動を取り除く
+
+  - 多くの場合, 回帰モデルと時系列モデルを用いる
+
+**対数変換の特徴**
+
+対数関数のグラフを作成する.
+
+```{r}
+# 対数関数 y = log(x) のグラフ
+curve(log(x), # 対数関数
+      ylab = "y", # y軸のラベル
+      xlim = c(0, 10), # x軸の範囲
+      ylim = c(-2, 8), # y軸の範囲
+      col = "red", # 赤色
+      lwd = 2) # 太線
+
+# 直線 y = x を追加
+abline(0, 1, # 切片, 傾き
+       col = "blue") # 青色
+
+# グリッドを追加
+abline(h = -2:8, # 横線
+       v = 0:10, # 縦線
+       col = "gray", # 灰色
+       lty = "dotted") # 点線
+
+# x軸, y軸を追加
+abline(h = 0, # x軸
+       v = 0) # y軸
+
+# 凡例を追加
+legend(1, 7, # 左上の x, y 座標
+       legend = c("y = log(x)", "y = x"), # 凡例
+       col = c("red", "blue"), # 赤色, 青色
+       lty = "solid") # 実線
+```
+
+よって, 対数変換には次の特徴がある.
+
+- 値が大きいデータを縮小する
+
+  - $\log (10) \approx `r signif(log(10), 3)`$, $\log (1000) \approx `r signif(log(1000), 3)`$
+
+  - <span style="color: rgb(255, 0, 0);">ばらつきを縮小する</span>
+
+- 値が小さいデータを拡大する
+
+  - $\log (0.01) \approx `r signif(log(0.01), 3)`$, $\log (0.02) \approx `r signif(log(0.02), 3)`$
+
+  - ばらつきを拡大する
+
+経済・ファイナンスデータに対しては, ばらつきを縮小するために対数変換を用いることが多い. データが負の場合は工夫が必要である. 例えば, $y_{t} > -1$ の場合は $\log(1 + y_{t})$ と変換すれば良い.
+
+**変化率と対数差分**
+
+変化率が小さいとき, 変化率と対数差分はほぼ等しい.
+
+$$
+y_{t} = y_{t - 1} (1 + R_{t}) = y_{t - 1} e^{r_{t}}
+$$
+より, 変化率と対数差分の関係は次である.
+$$
+R_{t} = e^{r_{t}} - 1 \quad \text{or} \quad r_{t} = \log (1 + R_{t})
+$$
+
+変化率が小さいとき $\log (1 + R_{t}) \approx R_{t}$ であるから, $r_{t} \approx R_{t}$.
+
+***
+$x = 0$ の近傍における $\log (1 + x)$ の Taylor 展開
+$$
+\log (1 + x) = x - \frac{1}{2} x^{2} + \cdots
+$$
+より, $x$ が $0$ に近いとき $\log (1 + x) \approx x$.
+
+***
+
+対数差分は理論的に扱いやすいので, <span style="color: rgb(255, 0, 0);">変化率よりも対数差分を用いる場合が多い.</span>
+
+- 値域
+
+  - 変化率の値域は $[−1, \infty)$ であり, 正規分布の値域と異なる
+
+  - 対数差分の値域は $(−\infty, \infty)$ であり, 正規分布の値域と同じ
+
+- 平均
+
+  - 変化率の平均 $\bar{R}$ と平均変化率 $R$ は異なる
+
+    - 変化率の平均
+  $$
+  \bar{R} = \frac{1}{T} \sum_{t = 1}^{T} R_{t} = \frac{1}{T} \sum_{t = 1}^{T} \frac{y_{t} - y_{t - 1}}{y_{t - 1}}
+  $$
+
+    - 平均変化率
+  $$
+  y_{T} = y_{T - 1} (1 + R_{T}) = \dots = y_{0} \prod_{t = 1}^{T} (1 + R_{t}) = y_{0} (1 + R)^{T}
+  $$
+  より
+  $$
+  (1 + R)^{T} = \prod_{t = 1}^{T} (1 + R_{t}) \quad \text{or} \quad R = \left[ \prod_{t = 1}^{T} (1 + R_{t}) \right]^{\frac{1}{T}} - 1
+  $$
+
+    - 一般的に, $\bar{R} \neq R$
+
+  - 対数差分の平均 $\bar{r}$ と平均対数差分 $r$ は同じ
+
+    - 対数差分の平均
+  $$
+  \bar{r} = \frac{1}{T} \sum_{t = 1}^{T} r_{t}
+  $$
+
+    - 平均対数差分
+  $$
+  y_{T} = y_{T - 1} e^{r_{T}} = \dots = y_{0} e^{r_{T} + \dots + r_{1}} = y_{0} e^{T r}
+  $$
+  より
+  $$
+  T r = \sum_{t = 1}^{T} r_{t} \quad \text{or} \quad r = \frac{1}{T} \sum_{t = 1}^{T} r_{t} = \bar{r}
+  $$
+
+    - よって, $\bar{r} = r$
+
+独立に対数正規分布 (log-normal distribution, $\log y_{t} \sim N(\mu, \sigma^{2})$) に従う模擬データを用いて, 変化率と対数差分を求める.
+
+```{r}
+T <- 5 # 標本数
+# 対数正規分布の模擬データを作成
+(y <- rlnorm(T + 1, # 標本数
+             5, 0.2)) # mu, sigma
+(R <- diff(y) / head(y, -1)) # 変化率 = 差分 / 最後を削除
+(r <- diff(log(y))) # 対数差分
+mean(R) # 変化率の平均
+prod(1 + R)^(1 / T) - 1 # 平均変化率
+mean(r) # 対数差分の平均
+```
+
+### 1.1.3 基本統計量と時系列モデル {-}
+
+**基本統計量**
+
+一般的に, 基本的な統計量は次である.
+
+- 平均 (mean), 分散 (variance), 標準偏差 (standard deviation)
+
+時系列データでは, さらに次が重要となる.
+
+- 時点 $t$ における $k$ 次 (ラグ $k$) の自己共分散 (autocovariance)
+\begin{align*}
+\gamma_{k, t} = \text{Cov} (y_{t}, y_{t - k}) = E [(y_{t} − \mu_{t}) (y_{t - k} − \mu_{t - k})], \quad \mu_{t} = E [y_{t}]
+\end{align*}
+
+- 時点 $t$ における $k$ 次 (ラグ $k$) の<span style="color: rgb(255, 0, 0);">自己相関係数 (autocorrelation coefficient)</span>
+$$
+\rho_{k, t} = \text{Cor} (y_{t}, y_{t - k}) = \frac{\gamma_{k, t}}{\sqrt{\gamma_{0, t}} \sqrt{\gamma_{0, t - k}}}
+$$
+
+自己共分散, 自己相関係数をラグ $k$ の関数としてみたものを, 自己共分散関数 (autocovariance function), 自己相関関数 (autocorrelation function) という. 
+
+- <span style="color: rgb(255, 0, 0);">コレログラム (correlogram)</span>: 自己相関関数のプロット
+
+**時系列モデル**
+
+時点 $t$ における $k$ 次の自己相関係数 $\rho_{k, t}$ を推定するためのデータは1つしかない. よって, <span style="color: rgb(255, 0, 0);">データの性質や構造を仮定しなければ分析できない</span>.
+
+- 時系列データ $\{ y_{t} \}_{t = 1}^{T}$ を確率変数列 $\{ y_{t} \}_{t = -\infty}^{\infty}$ からの1つの実現値と考える
+
+- 確率変数列の生成過程に関して, 性質や構造を仮定する    
+  (推測統計において, 母集団を仮定することと同じ)
+
+この確率変数列を<span style="color: rgb(255, 0, 0);">確率過程 (stochastic process)</span>, データ生成過程 (DGP: data generating process) という.
+
+- 時系列モデル: 確率過程の構造

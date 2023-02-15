@@ -1,0 +1,421 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{ltjarticle}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Economic Policy - Notes},
+  pdfauthor={Jake Underland},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=3cm]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{luatexja}
+
+\title{Economic Policy - Notes}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Economic Policy Fall, 2021}
+\author{Jake Underland}
+\date{2021-10-30}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\hypertarget{intro}{%
+\section{Intro}\label{intro}}
+
+\hypertarget{functions}{%
+\subsection{Functions}\label{functions}}
+
+\begin{itemize}
+\item
+  Functions and curves are relationships that map a field to another
+  field. \[f:\underbrace{A}_\textit{domain} \to B\]
+\item
+  \emph{Demand curve} maps price to demand, \emph{cost curve} maps price
+  to cost.
+\item
+  In most graphs, the domain is taken on the x-axis and the image of A
+  under the curve f is taken on the y-axis. However, when graphing
+  supply and demand, custom dictates we do the opposite (price, which is
+  the input, is on the y-axis and demand/supply is on the x-axis).
+\end{itemize}
+
+\hypertarget{partial-and-general-equilibrium-models}{%
+\subsection{Partial and General Equilibrium
+Models}\label{partial-and-general-equilibrium-models}}
+
+\begin{itemize}
+\tightlist
+\item
+  General Equilibrium models employ indifference curves. Partial
+  equilibrium models employ cost and demand curves.
+\end{itemize}
+
+\hypertarget{goals-of-government}{%
+\subsection{Goals of Government}\label{goals-of-government}}
+
+\begin{itemize}
+\item
+  \emph{Efficiency} and \emph{equity}.
+\item
+  When focusing on efficiency, partial equilibrium models are
+  sufficient.
+\item
+  In this class, we assume the government is only concerned with
+  efficiency.
+\item
+  \emph{Efficiency} = Pareto efficiency -\textgreater{} there is no
+  alternative allocation where all parties are left better off than they
+  were before. Efficiency implies the maximization of net surplus (if
+  net surplus can be further increased, then by increasing and adjusting
+  the allocation ex-post, all parties can improve their share).
+\item
+  Consumer surplus = benefit - expenditure\\
+  Utility is a more broadly defined concept and its conversion to
+  quantitative price need not be defined.
+\item
+  Profit = Revenue - Cost
+\end{itemize}
+
+\hypertarget{normative-arguments-in-economics}{%
+\subsection{Normative Arguments in
+Economics}\label{normative-arguments-in-economics}}
+
+\begin{itemize}
+\tightlist
+\item
+  the value of a commodity is not decided extraneously but decided by
+  the consumer subjectively (allows for freedom of individual values).\\
+\item
+  Society should respect that and policy should be aimed at maximizing
+  that (but how do we measure an inherently subjective value judgment in
+  an objective manner? \(\downarrow\))\\
+\item
+  Economics posits that if consumers are rational, such value judgments
+  can be measured objectively by using prices to rank preferences.
+  Further, it can be maximized.
+\end{itemize}
+
+\hypertarget{marginal-benefit-curve-and-demand-curve}{%
+\subsection{Marginal Benefit Curve and Demand
+Curve}\label{marginal-benefit-curve-and-demand-curve}}
+
+\begin{itemize}
+\item
+  Marginal Benefit Curve = Demand Curve
+\item
+  However, Demand Curve
+  \(= f: \textcolor{red}{price} \to \textcolor{blue}{consumption}\) and
+  MBC
+  \(= f:\textcolor{blue}{consumption} \to \textcolor{magenta}{marginal \: benefit}\)
+\item
+  How are they the same? -\textgreater{} if a consumer is rational, they
+  will consume a product until their marginal benefit from the product
+  is equal to its price (cost).
+\item
+  We build the demand curve by taking the rational consumption amount
+  for each price (so the amount where marginal utility = price). The
+  Demand Curve is just a plot of the marginal utility at each quantity
+  of the commodity.
+\item
+  If the Demand Curve goes left to right, starting with an input price
+  and outputting a level of demand, then the Marginal Benefit Curve goes
+  right to left, starting with a level of consumption and outputting a
+  marginal benefit (=represented as price).\\
+\item
+  Marginal Cost Curve and Supply Curve have exact same relationship.\\
+\item
+  \hypertarget{foo}{\textbf{Lies on a few assumptions:}}
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Consumers and producers are rational actors\\
+\item
+  Consumers and producers are price-takers.\\
+\item
+  (Simplification assumption but not necessary:) MB and MC are gradually
+  decreasing/increasing.
+\end{enumerate}
+
+\hypertarget{analysis-of-net-surplus}{%
+\subsection{Analysis of Net Surplus}\label{analysis-of-net-surplus}}
+
+\begin{itemize}
+\tightlist
+\item
+  Demand and supply curves give us surplus -\textgreater{} Extract
+  normative information from positive information.
+\end{itemize}
+
+\hypertarget{deductive-positivistic-analysis}{%
+\subsection{Deductive Positivistic
+Analysis}\label{deductive-positivistic-analysis}}
+
+\begin{itemize}
+\item
+  Policy \(\to\) Fundamentals (cost, benefit) \(\to\) desirable outcome
+  (price, production amount)
+\item
+  Economics is able to take into consideration the channels of change.
+\end{itemize}
+
+\hypertarget{meaning-of-efficiency}{%
+\section{Meaning of Efficiency}\label{meaning-of-efficiency}}
+
+\begin{itemize}
+\item
+  What is net surplus? -\textgreater{} Net surplus can be defined in the
+  absence of a market (i.e.~without supply and demand curves). Such a
+  definition is necessary when evaluating and comparing the efficiency
+  of different methods to distribute resources.
+\item
+  The net surplus of a given allocation method:
+  \[\text{Total Benefit of all consumers} - \text{Total cost of all firms}\]
+\item
+  (Deriving the market equation for net surplus from the above:)
+  \[\begin{aligned} 
+  \text{Net Surplus} =& \text{Total Benefit of all consumers} - \text{Total cost of all firms} \\
+  =& \textcolor{red}{(\text{Total Benefit of consumers} - \underbrace{\text{Total expenditure of consumers}}_\text{=total profit firms})}\\
+  &+ \textcolor{blue}{(\underbrace{\text{Total Profit of firms}}_\text{= total expenditure consumers} - \text{Total cost of firms})} \\
+  =& \textcolor{red}{\text{Consumer Surplus}} + \textcolor{blue}{\text{Producer Surplus}}
+  \end{aligned}\]
+\item
+  \textbf{Definition of an efficient allocation}:\\
+  When the benefit function (demand function) and each firm's cost
+  function are defined, the feasible method of allocation which
+  maximizes net surplus under these conditions is efficient.
+\item
+  (How do we know market is efficient? -\textgreater{} first welfare
+  theorem)
+\item
+  \emph{Important fact:} If, under a given allocation, there exists at
+  least one pair of consumer and firm such that the marginal benefit of
+  the consumer and the marginal cost of the firm is not equivalent, then
+  net surplus is not maximized (firm can produce more/less and consumer
+  can consume more/less until their marginal costs and benefits are
+  equivalent).\\
+  Proof. \[\begin{aligned} 
+  \text{If } D'(y) > C'(y):& \\
+  & D(y+1) - D(y) > C(y+1) - C(y) \\
+  &\implies \text{Total Surplus increases by } \Delta D(y) - \Delta C(y) \text{ when } y \to y + 1\\
+  \text{If } D'(y) < C'(y):& \\
+  & D(y) - D(y-1) < C(y) - C(y-1) \\
+  &\implies \text{Total Surplus increases by } \Delta C(y) - \Delta 
+  D(y) \text{ when } y \to y - 1
+  \end{aligned}\]
+\item
+  By taking the contraposition to the above claim, we find that if an
+  allocation is to be efficient, then \(\forall i, j:\) \[MU_i = MC_j\]
+\item
+  This condition is not dependent on the existence of a market or on the
+  rationality of its actors. It can be applied \textbf{to any method of
+  distribution}.
+\item
+  The efficiency of markets (under certain assumptions stated
+  \hyperlink{foo}{here}) can be derived thus:\\
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  In a competitive market, \(p = MU\) and
+  \(p = MC\)\footnote{Costs factored into this equalization include opportunity cost}.\\
+\item
+  All consumers/producers face the same prices (\emph{Law of one
+  price})\\
+\item
+  \(\implies\) marginal benefit and marginal cost between all consumers
+  and firms are equal.
+\end{enumerate}
+
+\hypertarget{imperfect-competition}{%
+\section{Imperfect Competition}\label{imperfect-competition}}
+
+\hypertarget{the-inefficiencies-of-monopolies}{%
+\subsection{The inefficiencies of
+monopolies}\label{the-inefficiencies-of-monopolies}}
+
+\begin{itemize}
+\item
+  Monopolists cease production when \(MR = p\), and since they are not
+  price takers, \(MR > MC\) (they can control price, endogenizing price
+  and demand into the marginal revenue maximization problem).\\
+\item
+  Since consumers still consume to the point where \(MU = p\), as a
+  result \(MU > MC\), which defies the conditions for efficiency:
+  \(p = MU = MC\).\\
+\item
+  The inefficiencies of monopolies, duopolies, oligopolies comes from
+  insufficient production.\\
+\item
+  Since taxes only further decrease production, how do we restore
+  efficiency in the case of imperfect competition?\\
+\item
+  \text{独占禁止法：「優越的地位の濫用」}
+\item
+  Types of monopolies:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Firm taking advantage of a newly emerged market that other firms
+    have not entered yet. These monopolies will resolve over time and
+    the lucrative initial period inspires innovative incentive (to
+    discover new markets).\\
+  \item
+    \textbf{Natural monopoly}: a monopoly in an industry in which high
+    infrastructural costs and other barriers to entry relative to the
+    size of the market give the largest supplier in an industry, often
+    the first supplier in a market, an overwhelming advantage over
+    potential competitors.
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{natural-monopolies}{%
+\subsection{Natural monopolies}\label{natural-monopolies}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Economy of Scale}:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Economies with increasing returns to scale (marginally decreasing
+    Average Total Cost).\\
+  \end{itemize}
+\item
+  Natural monopolies are typically borne of Fixed Costs, and is scaled
+  commensurately with the size of the fixed cost relative to variable
+  cost (initial infrastructure investment as seen in electricity, mobile
+  carriers, railroads, television, pharmaceutical, etc).\\
+\item
+  Newcomers cannot make up for their initial investment.\\
+\item
+  \textbf{Counteractive Policies:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Price regulations by the government (e.g.~railroad fees, highway
+    fees).\\
+  \item
+    Breaking up the economy of scale into subgroups and deregulating the
+    smaller subgroups less scaled in nature
+    \footnote{smaller fixed cost relative to variable cost} (e.g.~the
+    electricity industry, keeping regulations on transmission of
+    electricity but deregulating generation and distribution).\\
+    In the west, it is typical to separate railroad enterprises into
+    rental of railroad infrastructure (regulated) and train
+    cars/transportation and management of cars (deregulated).\\
+    In Japan, the construction of highways is a government enterprise
+    while management and administration is private (the right to which
+    is auctioned off).\\
+  \end{itemize}
+\item
+  \textbf{Network Externalities:}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    the phenomenon by which the value or utility a user derives from a
+    good or service depends on the number of users of compatible
+    products. Network effects are typically positive, resulting in a
+    given user deriving more value from a product as other users join
+    the same network (e.g.~phones, SNS, OS, Office Applications, digital
+    currency).\\
+  \item
+    Network externalities do not necessarily imply an efficiency problem
+    (imperfect competition\footnote{i.e. the distortion of prices}) but
+    they can be if the dominating firm distorts their prices.
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{excise-tax-subsidies}{%
+\subsection{Excise Tax, Subsidies}\label{excise-tax-subsidies}}
+
+\begin{itemize}
+\tightlist
+\item
+  Price Elasticity of Demand:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    sensitivity of demand to price fluctuations\\
+  \item
+    the shape of the curve of the demand function.
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{possible-questions}{%
+\section{Possible Questions}\label{possible-questions}}
+
+\end{document}

@@ -1,0 +1,264 @@
+---
+title: "Ch 10 Linear Regression Model"
+author: "Jake Underland"
+date: "7/7/2020"
+output: html_document
+---
+
+
+library(readr)  
+putnam <- read.csv("data/putnam.csv")
+```{r}
+putnam <- read.csv("data/putnam.csv")
+```
+
+```{r}
+names(putnam)
+```
+
+```{r}
+putnam
+```
+
+```{r}
+summary(putnam)
+```
+
+
+install.packages("stargazer")
+library("stargazer")
+```{r}
+library("stargazer")
+```
+
+```{r}
+stargazer(putnam,
+          type = "text",
+          title = "Descriptive statistics",
+          digits = 2)
+```
+
+
+```{r}
+stargazer(putnam,
+          type = "text",
+          title = "Descriptive statistics",
+          digits = 2,
+          out="putnam_table1.txt", 
+          covariate.labels = c("Governmetn Performance",
+                               "Civic Community Index",
+                               "Economic Situation")
+          
+)
+```
+
+
+<style>
+
+table, td, th {
+  border: none;
+  padding-left: 1em;
+  padding-right: 1em;
+  min-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+</style>
+
+
+```{r, results="asis"}
+stargazer(putnam,
+          type = "html",
+          title = "Descriptive statistics",
+          digits = 2,
+          out="putnam_table1.html", 
+          covariate.labels = c("Government Performance",
+                               "Civic Community Index",
+                               "Economic Situation")
+          
+)
+```
+
+
+```{r, results="asis"}
+stargazer(as.data.frame(putnam), 
+          type = "html", 
+          title="Descriptive statistics", 
+          digits=1)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(putnam, aes(cc, gov_p)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Civic Community Index", y = "Government Performance",
+         title = "Covernment Performance and Civic Community Index") + 
+  stat_smooth(method = lm) +  # (method = lm, se = FALSE) → 95% 信頼区間が消える
+  geom_text(aes(y = gov_p + 0.2, label = region), size = 4, vjust = 0)
+```
+
+```{r}
+cor.test(putnam$gov_p, putnam$cc)
+```
+#gov_p と cc の相関関係は 1% の有意水準 (p-value = 8.806e-08) で統計的に有意。  
+強い正の相関 (相関係数 r = 0.898) がある。
+しかし、相関関係は二つの変数間の「共変関係」を意味するだけ。
+因果関係を探るためには、cc を説明変数、gov_p を応答変数とした回帰分析が必要。
+gov_p を応答変数、cc を応答変数とした単回帰分析モデルを putnam_1 と名前をつけて、結果を表示する。
+
+```{r}
+putnam_1<- lm(gov_p ~ cc, data = putnam)
+summary(putnam_1)
+```
+
+```{r, results="asis"}
+stargazer(putnam_1,     
+          digits = 2,   　　　　　　　　　　　　　　　# 小数点以下 2 位まで示す
+          keep.stat = c("n", "adj.rsq", "f"), 　　　　# 表示する統計量を指定する
+          df = FALSE,   　　　　　　　　　　　　　　　# 自由度 (df) は非表示
+          dep.var.caption = "Outcome variable", 　　　# 変数の種類を明示
+          dep.var.labels = "Government Performance", # 応答変数の名前
+          title = "Model 1: Results of Simple Linear Regression", # タイトル
+          type ="html")
+```
+
+上記 R による単回帰分析での結果から、次の標本回帰関数 (SRF) の回帰式を求めることができる。
+
+govp^ =2.7+.567cc
+
+
+
+# Gov_p and Economic Situation Simple Linear Regression
+
+```{r}
+# 95% 信頼区間を消したければ lm の後ろに「, se = FALSE」を加える
+ggplot(putnam, aes(econ, gov_p)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Economic Situation", y = "Government Performance",
+         title = "Government Performance and Economic Situation") + 
+  stat_smooth(method = lm) +  
+  geom_text(aes(y = gov_p + 0.2, label = region), size = 4, vjust = 0)
+```
+
+
+```{r}
+putnam_2<- lm(gov_p ~ econ, data = putnam)
+summary(putnam_2)
+```
+
+
+```{r, results="asis"}
+stargazer(putnam_2,     
+          digits = 2,   　　　　　　　　　　　　　　　# 小数点以下 2 位まで示す
+          keep.stat = c("n", "adj.rsq", "f"), 　　　　# 表示する統計量を指定する
+          df = FALSE,   　　　　　　　　　　　　　　　# 自由度 (df) は非表示
+          dep.var.caption = "Outcome variable", 　　　# 変数の種類を明示
+          dep.var.labels = "Government Performance", # 応答変数の名前
+          title = "Model 2: Results of OLS: Economic Situation and Gov. Performance", # タイトル
+          type ="html")
+```
+
+*govp^ = 3.01 + .59econ* 
+
+# Mulitple Regression Analysis
+
+```{r}
+putnam_3<- lm(gov_p ~ cc + econ, data = putnam)
+summary(putnam_3)
+```
+
+```{r, results="asis"}
+stargazer(putnam_3,     
+          digits = 2,   　　　　　　　　　　　　　　　# 小数点以下 2 位まで示す
+          keep.stat = c("n", "adj.rsq", "f"), 　　　　# 表示する統計量を指定する
+          df = FALSE,   　　　　　　　　　　　　　　　# 自由度 (df) は非表示
+          dep.var.caption = "Outcome variable", 　　　# 変数の種類を明示
+          dep.var.labels = "Government Performance", # 応答変数の名前
+          title = "Model 3: Results of Multiple Regression", # タイトル
+          type ="html")
+```
+
+*govp3^ =3.24+0.75cc−0.25econ*
+
+
+```{r, results="asis"}
+stargazer(putnam_1, putnam_2, putnam_3,
+          style = "ajps", 　　　                    　# AJPS仕様
+          digits = 2,                                 # 表示する小数点以下の桁数指定  
+          dep.var.labels = "Government Performance", # 応答変数の名前
+          title = "Model 3: Results of Three Linear Regressions", # タイトル
+          type ="html")
+```
+
+
+
+# Dummy Variables in Regression
+
+```{r}
+library("tidyverse")
+library("ggsignif")
+library("stargazer")
+```
+
+```{r}
+dfl <- read_csv("data/putnam.csv")
+```
+
+```{r}
+dfl
+```
+
+```{r}
+dfl %>% 
+  ggplot(aes(econ, gov_p)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Economic Situation", y = "Government Performance",
+         title = "Government Performance and Economic Situation") + 
+  stat_smooth(method = lm, se = FALSE)   # se = FALSE → 95% 信頼区間を消す
+```
+
+Want to take difference in location into consideration. 
+Create dummy variable to account for north/south regional difference
+
+```{r}
+df2 <- mutate(dfl, location = as.numeric(location == "north" )) 
+                               # north = 1, south = 0 に変換 
+head(df2) #変換したデータをの一部を表示
+```
+
+
+```{r}
+model_2 <- lm(gov_p ~ econ + location, data = df2)
+summary(model_2)
+```
+この結果から、次の標本回帰関数 (SRF) の回帰式が得られる
+
+*govpˆ =5.22−0.019econ+6.88location*
+
+・経済の近代化の度合 (econ) はgov_pに有意な影響を与えていない
+・北部地域だとgov_pを 6.88 ポイント上げる。1%水準で有意
+
+・location ダミーによって統制すると、次の二つの（傾きの等しい）回帰式を得る
+
+南部 (loation = 0) なら、
+
+govpˆ =5.22−0.019econ
+
+北部 (location = 1) なら、
+
+govpˆ =12.11−0.019econ
+
+
+
+
+
+
+
+

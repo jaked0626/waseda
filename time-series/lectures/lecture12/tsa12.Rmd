@@ -1,0 +1,347 @@
+---
+title: 時系列分析 第 12 回
+subtitle: GARCH モデル
+author: Kenichiro Tamaki
+date: 2022 年 6 月 27 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE)
+```
+
+<p><br></p>
+
+# パッケージ
+
+必要なパッケージは次である.
+
+```{r}
+library(readxl) # xls ファイルの読込
+library(quantmod) # 時系列データに変換
+```
+
+<p><br></p>
+
+# 7 GARCH モデル {-}
+
+## はじめに {-}
+
+- ファイナンス分野では, 標準偏差のことを
+<span style="color: red;">
+ボラティリティ
+</span>
+という
+
+- リスク資産の評価や金融商品の価格評価などで, ボラティリティは極めて重要な役割を果たす
+
+- 株価などの金融時系列データでは, 収益率に相関はほぼないが, 大きく変動する時期が集中して現れる傾向がある
+
+  - 収益率には相関がない (効率的市場仮説)
+  
+  - 収益率の変動には相関がある (ボラティリティ・クラスタリング)
+
+- ARMAなどの時系列モデルによる分析は困難である
+
+    - ボラティリティ変動モデル (GARCH モデル, SV モデル)
+
+## 7.1 ボラティリティのモデル化の重要性 {-}
+
+**効率的市場仮説**
+
+- 株価は利用可能な情報を反映して適切に決定されている
+
+- 株式市場が効率的に機能しているので, 株価の予測は不可能である
+
+- 株式収益率 $y_{t}$ のモデル化を考える
+
+- 効率的市場仮説では, 将来の株価の変動は過去の株価の変動とは無関係である
+
+$$
+y_{t} = \mu + u_{t}, \quad u_{t} \sim \text{WN} (\sigma^{2})
+$$
+
+**株式収益率の特徴 (図 7.1, p.148)**
+
+- データ：日本, イギリス, アメリカの MSCI 指数の日次株式収益率
+
+  - (a), (c), (e): 株式収益率のコレログラム   
+  自己相関はほぼない
+
+  - (b), (d), (f): 株式収益率の
+  <span style="color: red;">
+  2 乗
+  </span>
+  のコレログラム    
+  自己相関が長期にわたって存在する
+
+- 金融データの変化率には自己相関は無いが, 2 乗系列には自己相関がある傾向がある
+
+- ARMA モデルは原系列に自己相関がある
+
+  - 金融データの自己相関構造を分析するには別のモデルが必要である
+
+**例**
+
+MSCI が提供している株式指数を用いる.
+
+- https://www.msci.com/
+
+上記の「Solutions」→「Indexes」→「PERFORMANCE
+」→「End of Day Index Data Search」から, 様々なデータ (xls ファイル) をダウンロードできる. 
+
+ここでは, 次のデータを用いる.
+
+- 2012 年 1 月から 2015 年 12 月までの 4 年間の日次株式指数
+
+- 日本, イギリス, アメリカの 3 カ国
+
+ファイル名をそれぞれ「JP.xls」,「UK.xls」, 「US.xls」とする. 必要ない箇所を削除し, さらに, 文字列形式であるから Excel か R で変換する必要がある. ファイルは, 1列目は日付, 2列目は数値に変換済とする.
+
+RStudio の右上にある「Environment」→「Import Dateset」→「From Excel..」において, xls ファイルの読込が出来る. または, 次を実行する.
+
+```{r}
+JP <- read_excel("JP.xls") # 日本
+UK <- read_excel("UK.xls") # イギリス
+US <- read_excel("US.xls") # アメリカ
+```
+
+時系列に変換する.
+
+```{r}
+JP <- as.xts(read.zoo(JP)) # 日本
+UK <- as.xts(read.zoo(UK)) # イギリス
+US <- as.xts(read.zoo(US)) # アメリカ
+MSCI <- cbind(JP, UK, US) # データを結合
+```
+
+対数収益率 ($\%$) に変換する.
+
+```{r}
+JP.r <- dailyReturn(MSCI$JP, type = 'log') * 100 # 日本
+UK.r <- dailyReturn(MSCI$UK, type = 'log') * 100 # イギリス
+US.r <- dailyReturn(MSCI$US, type = 'log') * 100 # アメリカ
+MSCI.r <- cbind(JP.r, UK.r, US.r) # データを結合
+names(MSCI.r) <- names(MSCI) # 名称を変更
+```
+
+株式指数, 対数収益率, 対数収益率の 2 乗について, 時系列とコレログラムをプロットする.
+
+```{r}
+plot(MSCI) # 株式指数の時系列プロット
+acf(coredata(MSCI)) # 株式指数のコレログラム
+plot(MSCI.r) # 対数収益率の時系列プロット
+acf(coredata(MSCI.r)) # 対数収益率のコレログラム
+plot(MSCI.r^(2)) # 対数収益率の 2 乗の時系列プロット
+acf(coredata(MSCI.r)^(2)) # 対数収益率の 2 乗のコレログラム
+```
+
+ARMA モデルの場合は次である.
+
+```{r fig.height = 6, fig.width = 9}
+x <- arima.sim(n = 500, # 標本数
+               list(ar = c(0.8, -0.4), # AR 係数
+                    ma = c(0.3, 0.6))) # MA 係数
+par(mfrow = c(2, 2)) # 画面を 2 × 2 に分割
+plot(x) # 時系列プロット
+plot(x^(2)) # 2 乗の時系列プロット
+acf(x) # コレログラム
+acf(x^(2)) #2 乗のコレログラム
+```
+
+**条件付分散のモデル化**
+
+2 乗系列の自己相関をモデル化するために, 条件付分散を考える.
+
+$$
+y_{t} = \mu_{t} + u_{t} = \mu_{t} + \sqrt{h_{t}} v_{t}, \quad v_{t} \sim \text{iid} (0,1)
+$$
+
+- $h_{t} = E[u_{t}^{2} \vert u_{t-1}, u_{t-2}, \dots]$: $u_{t}$ の条件付分散 
+  
+- $y_{t}$ の条件付分布: $y_{t} \vert \Omega_{t-1} \sim (\mu_{t}, h_{t})$
+  
+- $\Omega_{t} = \{ y_{t}, y_{t-1}, \dots \}$: $t$ 時点で得られる情報の集合
+
+- 条件付期待値 $\mu_{t}$ のモデル: AR, ARMAモデルなど
+
+-
+<span style="color: red;">
+条件付分散 $h_{t}$ のモデル:
+</span>
+
+  - $h_{t}$ は確定的 $\Rightarrow$ 自己回帰分散不均一 (ARCH, Autoregressive Conditional Heteroskedasticity) モデル
+
+  - $h_{t}$ は確率的 $\Rightarrow$ 確率的ボラティリティ(SV, Stochastic Volatility) モデル
+
+<p><br></p>
+
+## 7.2 GARCH モデル {-}
+
+### 7.2.1 ARCH モデル (Engle, 1982) {-}
+
+- ARCH$(1)$ モデル
+$$
+h_{t} = \omega + \alpha_{1} u_{t-1}^{2}
+$$
+
+- ARCH$(m)$ モデル
+$$
+h_{t} = \omega + \alpha_{1} u_{t-1}^{2} + \dots + \alpha_{m} u_{t-m}^{2}
+$$
+
+  - パラメータ制約: $h_{t} > 0$ より $\omega > 0$, $\alpha_{i} \ge 0$
+
+  - $w_{t} = u_{t}^{2} - h_{t}$ とすると
+  $$
+  u_{t}^{2} = \omega + \alpha_{1} u_{t-1}^{2} + \dots + \alpha_{m} u_{t-m}^{2} + w_{t}
+  $$
+  であるから, $u_{t}^{2}$ は AR($m$) 過程に従う
+
+  - $\mu_{t} = \mu$ のとき, $y_{t}$ は無相関である
+  $$
+  \text{Cov}[y_{t}, y_{t+k} \vert \Omega_{t-1}] = E[\sqrt{h_{t}} v_{t} \sqrt{h_{t+k}} v_{t+k} \vert \Omega_{t-1}] = E[\sqrt{h_{t}} v_{t} \sqrt{h_{t+k}} \vert \Omega_{t-1}] E[v_{t+k}] = 0
+  $$
+  
+**ARCH$(m)$ モデルの定常性**
+
+- 定常条件: $u_{t}^{2}$ の AR 特性方程式 $1 - \alpha_{1} z - \dots - \alpha_{m} z^{m} = 0$ の全ての解の絶対値が $1$ より大きい   
+$\alpha_{i} \ge 0$ より
+$$
+\alpha_{1} + \dots + \alpha_{m} < 1
+$$
+
+- $u_{t}$ の (無条件) 分散は
+$$
+E[u_{t}^{2}] = \frac{\omega}{1 - \alpha_{1} - \dots - \alpha_{m}}
+$$
+
+- ARCH$(1)$ における $u_{t}$ の 4 次モーメントは
+$$
+E[u_{t}^{4}] = \frac{\omega}{1 - 3\alpha_{1}^{2}}
+$$
+であるから, 4 次モーメントの存在条件は, $\alpha_{1}^{2} < 1/3$
+
+### 7.2.2 GARCHモデル (Bollerslev, 1986) {-}
+
+- Generalized ARCH model
+
+- 金融データの 2 乗系列は長期にわたって正の自己相関をもつことが多い   
+$\Rightarrow$ ARCHモデルでは次数が大きくなり過ぎる
+
+- GARCH$(r, m)$ モデル
+$$
+h_{t} = \omega + \beta_{1} h_{t-1} + \dots + \beta_{r} h_{t-r} + \alpha_{1} u_{t-1}^{2} + \dots + \alpha_{m} u_{t-m}^{2}
+$$
+
+  - パラメータ制約: $h_{t} > 0$ より $\omega > 0$, $\alpha_{i} \ge 0$, $\beta_{j} \ge 0$
+
+  - $w_{t} = u_{t}^{2} - h_{t}$ とすると
+  $$
+  u_{t}^{2} = \omega + (\alpha_{1} + \beta_{1}) u_{t-1}^{2} + \dots + (\alpha_{p} + \beta_{p}) u_{t-p}^{2} + w_{t} - \beta_{1} w_{t-1} - \dots -  \beta_{r} w_{t-r}
+  $$
+  であるから, $u_{t}^{2}$ は ARMA($p,r$) 過程に従う $(p = \max(r, m))$
+  
+  - $\mu_{t} = \mu$ のとき, $y_{t}$ は無相関である
+
+**GARCH$(1,1)$ モデルの定常性**
+
+- 定常条件: $u_{t}^{2}$ の AR 特性方程式 $1 - (\alpha_{1} + \beta_{1}) z  = 0$ の解の絶対値が $1$ より大きい   
+$\alpha_{1}, \beta_{1} \ge 0$ より
+$$
+\alpha_{1} + \beta_{1} < 1
+$$
+
+- $u_{t}$ の (無条件) 分散は
+$$
+E[u_{t}^{2}] = \frac{\omega}{1 - \alpha_{1} - \beta_{1}}
+$$
+
+#### GARCHタイプモデル
+
+- IGARCH(1,1) (Integrated GARCH)
+$$
+h_{t} = \omega + \beta_{1} h_{t-1} + \alpha_{1} u_{t-1}^{2}, \quad \alpha_{1} + \beta_{1} = 1
+$$
+
+  - 定常性を満たさない
+  
+  - 恒久的な持続性をもつ
+
+- GJR(1,1) (Glosten-Jagannathan-Runkle)
+$$
+h_{t} = \omega + \beta_{1} h_{t-1} + \alpha_{1} u_{t-1}^{2} + \gamma u_{t-1}^{2} I_{t-1}, \quad
+I_{t-1} =
+\begin{cases}
+1, & u_{t-1} < 0 \\
+0, & u_{t-1} \ge 0 \\
+\end{cases}
+$$
+
+  - 非対称性もつ
+
+  - $\gamma > 0$ $\Rightarrow$ 正と負のショックでは, 負のショックがより大きな影響をもつ (レバレッジ効果)
+
+- EGARCH(1,1) (Exponential GARCH)
+$$
+\log h_{t} = \omega + \beta_{1} \log h_{t-1} + \gamma v_{t-1} + \delta \left( \lvert v_{t-1} \rvert - E[\lvert v_{t-1} \rvert] \right)
+$$
+
+  - 非対称性をもつ
+
+  - パラメータ制約は必要ない
+
+- GARCH(1,1)-M (GARCH-in-Mean)
+$$
+y_{t} = \mu_{t} + \delta h_{t} + u_{t}
+$$
+
+  - $\delta > 0$ $\Rightarrow$ 条件付分散が高いとき, 条件付期待値も高くなる (ハイリスク・ハイリターン)
+
+  - 条件付分散が条件付期待値に影響を与える
+
+## 7.3 GARCH モデルの統計的推測 {-}
+
+### 7.3.1 GARCH モデルの推定 {-}
+
+- 条件付最尤法を用いてパラメータを推定
+
+- $v_{t}$ の分布として正規分布を用いるが, 他にも次の分布が用いられる
+
+  - $t$ 分布 $\Rightarrow$ 正規分布より裾が厚い
+  
+  - Skewed $t$ 分布 $\Rightarrow$ 非対称性をもつ $t$ 分布
+
+  - 一般化誤差分布 (GED, Generalized Error Distribution)
+
+### 7.3.2 GARCH モデルの選択と診断 {-}
+
+- モデル選択
+
+  - 情報量基準 (AIC, BIC など) を用いる
+
+  - 包含関係のあるモデル間で比較するときに用いることができる
+
+  - 包含関係がないモデル間で比較しても意味はない
+    
+    - GARCH と GJR は包含関係がある (GJR において $\gamma = 0$ とすると GARCH になる)
+
+    - GARCH と EGARCH に包含関係はない
+
+    - ARMA と GARCH に包含関係はない
+
+- モデル診断
+
+  - GARCH は 2 乗系列の自己相関をモデル化する
+
+  - $v_{t}$ だけではなく, $v_{t}^{2}$ の自己相関について検定する

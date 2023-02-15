@@ -1,0 +1,317 @@
+---
+title: 時系列分析 第 5 回
+subtitle: 予測
+author: Kenichiro Tamaki
+date: 2022 年 5 月 9 日
+# date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: yes
+css: style.css
+# csl: apa.csl
+# bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<p><br></p>
+
+# 3 予測 {-}
+
+## 3.1 予測の基礎 {-}
+
+### 3.1.1 予測の考え方 {-}
+
+例として, 次の AR(1) を考える.
+$$
+\begin{align}
+& y_{t} = 10 + 0.9 y_{t - 1} + \varepsilon_{t} \\
+& \varepsilon_{t} \sim \text{iid}, \quad \Pr (\varepsilon_{t} = 3) = 0.8, \quad \Pr (\varepsilon_{t} = -12) = 0.2
+\end{align}
+$$
+
+現時点 $t$ における観測値を $y_{t} = 110$ とし, 1期先 $y_{t + 1}$ を予測する.
+$$
+\Pr (y_{t + 1} = 112) = 0.8, \quad \Pr (y_{t + 1} = 97) = 0.2
+$$
+
+予測として次が考えられる.
+
+- (無条件) 期待値: $\hat{y}_{t + 1 \vert t}^{\text{A}} = \dfrac{10}{1 - 0.9} = 100$
+
+- 確率が大きい値: $\hat{y}_{t + 1 \vert t}^{\text{B}} = 112$
+
+- 条件付期待値: $\hat{y}_{t + 1 \vert t}^{\text{C}} = 10 + 0.9 \times 110 = 109$
+
+<span style="color: rgb(255, 0, 0);">予測誤差 $y_{t + 1} - \hat{y}_{t + 1 \vert t}$</span> が最小になる予測が最も良いが, 確率変数であるから大小を評価できない.
+
+**予測誤差の指標**
+
+- MSE (mean squared error): 平均2乗誤差 = 予測誤差の2乗の期待値
+
+- RMSE (root mean square error): MSEの平方根
+
+- MAE (mean absolute error): 平均絶対誤差 = 誤差の絶対値の期待値
+
+> **定義 3.1 (最適予測, p.58)**  
+MSEを最小にする予測を最適予測 (optimal forecast) という
+
+上記の例で MSE を求める.
+
+- $\text{MSE} (\hat{y}_{t + 1 \vert t}^{\text{A}}) = (112 - 100)^{2} \times 0.8 + (97 - 100)^{2} \times 0.2 = 117$
+
+- $\text{MSE} (\hat{y}_{t + 1 \vert t}^{\text{B}}) = (112 - 112)^{2} \times 0.8 + (97 - 112)^{2} \times 0.2 = 45$
+
+- $\text{MSE} (\hat{y}_{t + 1 \vert t}^{\text{C}}) = (112 - 109)^{2} \times 0.8 + (97 - 109)^{2} \times 0.2 = 36$
+
+よって, 条件付期待値が最適予測となる.
+
+### 3.1.2 表記と仮定 {-}
+
+一般的に, 条件付期待値が MSE を最小にする予測である.
+
+- $\Omega_{t} = \{ y_{t}, y_{t - 1}, \dots, y_{1} \}$: 時点 $t$ において観測可能な集合
+
+- $\hat{y}_{t + h \vert t}$: 時点 $t$ における $h$ 期先の $y_{t}$ の予測値
+
+- $\mu_{t + h \vert t} = E [y_{t + h} | \Omega_{t}]$:時点 $t$ における $y_{t + h}$ の条件付期待値
+
+$$
+\begin{align}
+\text{MSE} (\hat{y}_{t + h \vert t}) &= E \left[ \left( y_{t + h} - \hat{y}_{t + h \vert t} \right)^{2} \vert \Omega_{t} \right] \\
+&= E \left[ \left( y_{t + h} - \mu_{t + h \vert t} \right)^{2} + 2 \left( y_{t + h} - \mu_{t + h \vert t} \right) \left( \mu_{t + h \vert t} - \hat{y}_{t + h \vert t} \right) + \left( \mu_{t + h \vert t} - \hat{y}_{t + h \vert t} \right)^{2} \vert \Omega_{t} \right] \\
+&= E \left[ \left( y_{t + h} - \mu_{t + h \vert t} \right)^{2} \vert \Omega_{t} \right] + \left( \mu_{t + h \vert t} - \hat{y}_{t + h \vert t} \right)^{2}
+\end{align}
+$$
+
+これより, $\hat{y}_{t + h \vert t} = \mu_{t + h \vert t}$ のとき MSE は最小となる. よって, <span style="color: rgb(255, 0, 0);">条件付期待値が MSE を最小にする最適予測</span>である.
+
+## 3.2 AR 過程の予測 {-}
+
+### AR(1) の予測 {-}
+
+次の AR(1) を考える.
+$$
+y_{t} = c + \phi y_{t - 1} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } N(0, \sigma^{2})
+$$
+
+現時点を $t$ とする.
+
+**1 期先予測**
+
+$$
+y_{t + 1} = c + \phi y_{t} + \varepsilon_{t + 1}
+$$
+であるから, 1 期先最適予測は次である.
+$$
+\hat{y}_{t + 1 \vert t} = E [y_{t + 1} \vert \Omega_{t}] = E [c + \phi y_{t} + \varepsilon_{t + 1} \vert y_{t}] = c + \phi y_{t}
+$$
+予測誤差は $\hat{e}_{t + 1 \vert t} = y_{t + 1} - \hat{y}_{t + 1 \vert t} = \varepsilon_{t + 1}$ であるから, MSE は次である.
+$$
+\text{MSE} (\hat{y}_{t + 1 \vert t}) = E [\varepsilon_{t + 1}^{2} \vert \Omega_{t}] = E [\varepsilon_{t + 1}^{2}] = \sigma^{2}
+$$
+
+**2 期先予測**
+
+$$
+\begin{align}
+y_{t + 2} &= c + \phi y_{t + 1} + \varepsilon_{t + 2} \\
+&= c + \phi (c + \phi y_{t} + \varepsilon_{t + 1}) + \varepsilon_{t + 2} \\
+&= (1 + \phi) c + \phi^{2} y_{t} + \varepsilon_{t + 2} + \phi \varepsilon_{t + 1}
+\end{align}
+$$
+であるから, 2 期先最適予測は次である.
+$$
+\hat{y}_{t + 2 \vert t} = E [y_{t + 2} \vert \Omega_{t}] = E [(1 + \phi) c + \phi^{2} y_{t} + \varepsilon_{t + 2} + \phi \varepsilon_{t + 1} \vert y_{t}] = (1 + \phi) c + \phi^{2} y_{t}
+$$
+予測誤差は $\hat{e}_{t + 2 \vert t} = y_{t + 2} - \hat{y}_{t + 2 \vert t} = \varepsilon_{t + 2} + \phi \varepsilon_{t + 1}$ であるから, MSE は次である.
+$$
+\text{MSE} (\hat{y}_{t + 2 \vert t}) = E [(\varepsilon_{t + 2} + \phi \varepsilon_{t + 1})^{2} \vert \Omega_{t}] = E [(\varepsilon_{t + 2} + \phi \varepsilon_{t + 1})^{2} ] = (1 + \phi^{2}) \sigma^{2}
+$$
+
+**$h$ 期先予測**
+
+$$
+\begin{align}
+y_{t + h} &= c + \phi y_{t + h-1} + \varepsilon_{t + h} \\
+&= \frac{1 - \phi^{k}}{1 - \phi} c + \phi^{k} y_{t} + \sum_{k = 0}^{h - 1} \phi^{k} \varepsilon_{t + h - k}
+\end{align}
+$$
+であるから, $h$ 期先最適予測は次である.
+$$
+\begin{align}
+\hat{y}_{t + h \vert t} &= E [y_{t + h} \vert \Omega_{t}] \\
+&= E \left[ \frac{1 - \phi^{k}}{1 - \phi} c + \phi^{k} y_{t} + \sum_{k = 0}^{h - 1} \phi^{k} \varepsilon_{t + h-k} \Bigg\vert y_{t} \right] \\
+&= \frac{1 - \phi^{k}}{1 - \phi} c + \phi^{k} y_{t}
+\end{align}
+$$
+
+- 定常条件より $\lvert \phi \rvert < 1$ であるから, $h$ が大きくなると $y_{t}$ の影響が指数的に減衰する
+
+- 予測値は, (無条件) 期待値 $\dfrac{c}{1 - \phi}$ に収束する (平均回帰的, mean reverting)
+
+予測誤差は $\hat{e}_{t + h \vert t} = y_{t + h} - \hat{y}_{t + h \vert t} = \sum_{k = 0}^{h - 1} \phi^{k} \varepsilon_{t + h - k}$ であるから, MSE は次である.
+$$
+\begin{align}
+\text{MSE} (\hat{y}_{t + h \vert t}) &= E \left[ \left( \sum_{k = 0}^{h - 1} \phi^{k} \varepsilon_{t + h - k} \right)^{2} \Bigg\vert \Omega_{t} \right] \\
+&= E \left[ \left( \sum_{k = 0}^{h - 1} \phi^{k} \varepsilon_{t + h - k} \right)^{2} \right] \\
+&= \sigma^{2} \sum_{k = 0}^{h - 1} \phi^{2k} \\
+&= \frac{1 - \phi^{2h}}{1 - \phi^{2}} \sigma^{2}
+\end{align}
+$$
+
+- 定常条件より $\lvert \phi \rvert < 1$ であるから, MSEは $h$ について単調増加である
+
+- 予測期間が長くなると予測誤差が増加する
+
+- MSE は, (無条件) 分散 $\dfrac{\sigma^{2}}{1 - \phi^{2}}$ に収束する
+
+### AR($p$) の予測 {-}
+
+次の AR($p$) を考える.
+$$
+y_{t} = c + \phi_{1} y_{t - 1} + \dots + \phi_{p} y_{t - p} + \varepsilon_{t}, \quad \varepsilon_{t} \sim \text{iid } N(0, \sigma^{2})
+$$
+
+現時点を $t$ とする.
+
+**1 期先予測**
+
+$$
+y_{t + 1} = c + \phi_{1} y_{t} + \dots + \phi_{p} y_{t - p + 1} + \varepsilon_{t + 1}
+$$
+であるから, 1 期先最適予測は次である.
+$$
+\hat{y}_{t + 1 \vert t} = E [y_{t + 1} \vert \Omega_{t}] = c + \phi_{1} y_{t} + \dots + \phi_{p} y_{t - p + 1}
+$$
+
+**2 期先予測**
+$$
+\begin{align}
+y_{t + 2} &= c + \phi_{1} y_{t + 1} + \phi_{2} y_{t} + \dots + \phi_{p} y_{t - p + 2} + \varepsilon_{t + 2} \\
+&= c + \phi_{1} (c + \phi_{1} y_{t} + \dots + \phi_{p} y_{t - p + 1} + \varepsilon_{t + 1}) + \phi_{2} y_{t} + \dots + \phi_{p} y_{t - p + 2} + \varepsilon_{t + 2}
+\end{align}
+$$
+であるから, 2 期先最適予測は次である.
+$$
+\hat{y}_{t + 2 \vert t} = E [y_{t + 2} \vert \Omega_{t}] = c + \phi_{1} \hat{y}_{t + 1 \vert t} + \phi_{2} y_{t} + \dots + \phi_{p} y_{t - p + 2}
+$$
+つまり, 観測されない $y_{t + 1}$ をその予測値 $\hat{y}_{t + 1 \vert t}$ で置き換えれば良い  
+
+**$h$ 期先予測**
+
+同様に, 観測されない値をその予測値で置き換える逐次予測を用いれば良い. $h$ 期先最適予測は次である.
+$$
+\hat{y}_{t + h \vert t} = E [y_{t + h} \vert \Omega_{t}] = c + \phi_{1} \hat{y}_{t + h \vert t} + \phi_{2} \hat{y}_{t + h - 1 \vert t} + \dots + \phi_{p} \hat{y}_{t + h - p \vert t}
+$$
+
+## 3.3 区間予測 {-}
+
+- 点予測
+
+  - 1 つの値のみで予測する
+
+  - 不確実性は MSE で表される
+
+- 区間予測
+
+  - 点予測を含む区間を予測する
+
+  - 不確実性は区間の長さで表される
+
+- 区間予測のメリット
+
+  - 分かりやすい
+
+  - 上限と下限により, 複数のシナリオを考慮することができる
+
+### AR($p$) の区間予測 {-}
+
+攪乱項が正規分布に従うと仮定すると, $y_{t + h \vert t}$ の条件付分布は次である.
+$$
+y_{t + h \vert t} \vert \Omega_{t} \sim N(\hat{y}_{t + h \vert t}, \text{MSE}(\hat{y}_{t + h\vert t}))
+$$
+
+よって, $y_{t + h \vert t}$ の 95%信頼区間は次である.
+$$
+\left( \hat{y}_{t + h  \vert t} - 1.96 \sqrt{\text{MSE}(\hat{y}_{t + h \vert t})}, \hat{y}_{t + h \vert t} + 1.96 \sqrt{\text{MSE}(\hat{y}_{t + h \vert t})} \right)
+$$
+これが, $h$ 期先 95%区間予測である. 一般的に, $\text{MSE}(\hat{y}_{t + h \vert t})$ の計算は困難であるから, シミュレーションなど別の方法を用いて値を求める.
+
+## 3.4 MA 過程の予測 {-}
+
+反転可能な MA(1) を考える.
+$$
+y_{t} = \mu + \varepsilon_{t} + \theta \varepsilon_{t - 1}, \quad \varepsilon_{t} \sim \text{iid } N(0, \sigma^{2})
+$$
+
+現時点を $t$ とし, 無限個の観測値が得られる ($\Omega_{t} = \{ y_{t}, y_{t - 1}, \dots \}$) と仮定すると, $\{y_{t}, y_{t - 1}, \dots \}$ と $\{\varepsilon_{t}, \varepsilon_{t - 1}, \dots \}$ は同じ情報である.
+
+**1 期先予測**
+
+$$
+y_{t + 1} = \mu + \varepsilon_{t + 1} + \theta \varepsilon_{t}
+$$
+であるから, 1 期先最適予測は次である.
+$$
+\hat{y}_{t + 1 \vert t} = E [y_{t + 1} \vert \Omega_{t}] = E [\mu + \varepsilon_{t + 1} + \theta \varepsilon_{t} \vert \Omega_{t}] = \mu + \theta \varepsilon_{t}
+$$
+予測誤差は $\hat{e}_{t + 1 \vert t} = y_{t + 1} - \hat{y}_{t + 1 \vert t} = \varepsilon_{t + 1}$ であるから, MSE は次である.
+$$
+\text{MSE} (\hat{y}_{t + 1 \vert t}) = E [\varepsilon_{t + 1}^{2} \vert \Omega_{t}] = E [\varepsilon_{t + 1}^{2}] = \sigma^{2}
+$$
+
+**$h$ $(h \ge 2)$ 期先予測**
+
+$$
+y_{t + h} = \mu + \varepsilon_{t + h} + \theta \varepsilon_{t + h - 1}
+$$
+であるから, $h$ 期先最適予測は次である.
+$$
+\hat{y}_{t + h \vert t} = E [y_{t + h} \vert \Omega_{t}] = E [\mu + \varepsilon_{t + h} + \theta \varepsilon_{t + h - 1} \vert \Omega_{t}] = \mu
+$$
+予測誤差は $\hat{e}_{t + h \vert t} = y_{t + h} - \hat{y}_{t + h \vert t} = \varepsilon_{t + h} + \theta \varepsilon_{t + h - 1}$ であるから, MSE は次である.
+$$
+\text{MSE} (\hat{y}_{t + h \vert t}) = E [(\varepsilon_{t + h} + \theta \varepsilon_{t + h - 1})^{2} \vert \Omega_{t}] = E [(\varepsilon_{t + h} + \theta \varepsilon_{t + h - 1})^{2}] = (1 + \theta^{2}) \sigma^{2}
+$$
+
+実際には, 得られる観測値は有限 ($\Omega_{t} = \{y_{t}, y_{t - 1}, \dots, y_{1} \}$) であるから, $\varepsilon_{0} = 0$ とした次の近似値を用いる.
+$$
+\begin{align}
+& \hat{\varepsilon}_{1} = y_{1} - \mu \\
+& \hat{\varepsilon}_{2} = y_{2} - \mu - \theta \hat{\varepsilon}_{1} \\
+& \quad \vdots \\
+& \hat{\varepsilon}_{t} = y_{t} - \mu - \theta \hat{\varepsilon}_{t-1} \\
+\end{align}
+$$
+
+## 3.5 ARMA 過程の予測 {-}
+
+AR 過程と MA 過程の予測を組み合わせればよい. 次の ARMA(1,1) を考える.
+$$
+y_{t} = c + \phi y_{t - 1} + \varepsilon_{t} + \theta \varepsilon_{t - 1}, \quad \varepsilon_{t} \sim \text{iid } N(0, \sigma^{2})
+$$
+
+現時点を $t$ とする. まず, $\varepsilon_{t}$ の近似値を求める.
+$$
+\begin{align}
+& \hat{\varepsilon}_{2} = y_{2} - c - \phi y_{1} \\
+& \hat{\varepsilon}_{3} = y_{3} - c - \phi y_{2} - \theta \hat{\varepsilon}_{2} \\
+& \quad \vdots \\
+& \hat{\varepsilon}_{t} = y_{t} - c - \phi y_{t-1} - \theta \hat{\varepsilon}_{t-1} \\
+\end{align}
+$$
+
+- 1 期先最適予測
+$$
+\hat{y}_{t + 1 \vert t} = c + \phi y_{t} + \theta \hat{\varepsilon}_{t}
+$$
+
+- $h$ $(h \ge 2)$ 期先最適予測
+$$
+\hat{y}_{t + h \vert t} = c + \phi \hat{y}_{t + h - 1 \vert t}
+$$

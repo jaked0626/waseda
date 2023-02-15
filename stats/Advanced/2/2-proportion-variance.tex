@@ -1,0 +1,234 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Proportions, Differences of Means, and Sample Variance},
+  pdfauthor={Jake Underland},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\title{Proportions, Differences of Means, and Sample Variance}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Numerical Statistics Fall, 2021}
+\author{Jake Underland}
+\date{2021-10-14}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\hypertarget{the-sampling-distribution-of-proportions}{%
+\section{The Sampling Distribution of
+Proportions}\label{the-sampling-distribution-of-proportions}}
+
+\hypertarget{bernoulli-distribution}{%
+\subsection{Bernoulli Distribution}\label{bernoulli-distribution}}
+
+Let \((X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)\) drawn from an
+infinite (\(\approx\) with replacement) population. \[\begin{cases}
+P(X_i = 1) = p  \\
+P(X_i=0) = 1 - p
+\end{cases}(i = 1, 2, \dots, n)\] The probabilities can be combined into
+one as
+\[P(X_i = x_i) = p^{x_i} (1-p)^{1 - x_i} \text{ for }(x_i = 0, 1)\] So,
+the joint probability can be expressed as: \[\begin{aligned}
+P(X_1 = x_1, X_2 = x_2, \dots, X_n = x_n) &= \prod^{n}_{i=1}P(X_i = x_i) \\
+&= \prod^{n}_{i=1}p^{x_i} (1-p)^{1 - x_i} \\
+&= p^{x_1 + x_2 + \dots + x_n}(1-p)^{n - x_1 - x_2 - \dots - x_n} \\
+&= p^{\sum_{i = 1}^nx_i}(1-p)^{n - \sum_{i = 1}^nx_i}
+\end{aligned}\] \textbf{Expectation and Variance:}\\
+\[\begin{aligned} 
+E(X) &= \sum^1_{x=0} P(X = x) x  \\
+&= 1 \times p + 0 \times (1-p) \\
+&= p \\
+Var(X) &= \sum^1_{x=0} P(X = x) x^2 - E(X)^2 \\
+&= p - p^2 \\
+&= p(1-p)
+\end{aligned}\]
+
+\hypertarget{binomial-distribution}{%
+\subsection{Binomial Distribution}\label{binomial-distribution}}
+
+Let \((X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)\). Then,
+\(Y = X_1 + X_2 + \cdots + X_n \sim Bin(n, p)\).
+\[P(Y = x) =\binom{n}{x}p^x (1-p)^{n-x} \text{ for } x = 0, 1, \dots, n\]
+\textbf{Binomial Theorem:}
+\[ (a +b)^n = \sum^n_{i=1}\binom{n}{x}a^xb^{n-x}\] where the right hand
+side represents the probability of a particular value of \(x\), or a
+particular combination of number of successes and number of failures.
+
+\textbf{Expectation and Variance:} \[
+\begin{aligned} 
+E(Y) &= E(\sum^n_{i=0} X_i) \text{ where } X_i \stackrel{iid}{\sim} Ber(p) \\
+&=\sum^n_{i=0}  E(X_i)\\
+&= \sum^n_{i=0} p \\
+&= np\\
+Var(Y) &= Var(\sum^n_{i=0} X_i) \text{ where } X_i \stackrel{iid}{\sim} Ber(p) \\
+&=\sum^n_{i=0}  Var(X_i) \dots Independene\\
+&= np(1-p)
+\end{aligned}
+\]
+
+\hypertarget{proportions}{%
+\subsection{Proportions}\label{proportions}}
+
+Suppose \((X_1, X_2, \dots, X_n) \stackrel{iid}{\sim}Ber(p)\). Then, the
+sample mean \[\bar{X} = \frac{ X_1 + X_2 + \dots + X_n}{n}\] is an
+unbiased estimator of the parameter \(p\): \[\begin{aligned}
+E(\bar{X}) &= E(\frac{1}{n} \sum^n_{i=1} X_i) \\
+&= \frac{1}{n} \sum^n_{i=1} E(X_i) \\
+&= \frac{1}{n} \sum^n_{i=1} p \\
+&= p \; \Box
+\end{aligned}\] The variance of the sample mean \(\bar{X}\) is:
+
+\[\begin{aligned}
+Var(\bar{X}) &= Var(\frac{1}{n} \sum^n_{i=1} X_i) \\
+&= \frac{1}{n^2} \sum^n_{i=1} Var(X_i) \dots Independence \\
+&= \frac{1}{n^2} \sum^n_{i=1} p(1-p) \\
+&= \frac{p(1-p)}{n} \; \Box
+\end{aligned}\]
+
+\hypertarget{sampling-distribution-of-the-differences-of-means}{%
+\section{Sampling Distribution of the Differences of
+Means}\label{sampling-distribution-of-the-differences-of-means}}
+
+\[\begin{aligned}
+&\Pi_1: \text{ A population with mean $\mu_1$ and standard deviation $\sigma_1$} \\
+&\Pi_2: \text{ A population with mean $\mu_2$ and standard deviation $\sigma_2$}
+\end{aligned}\]
+
+We examine the following cases where the populations are infinite
+(sampling is with replacement) or populations are finite (sampling is
+without replacement).
+
+\hypertarget{infinite-population-sampling-with-replacement}{%
+\subsection{Infinite Population (Sampling With
+Replacement)}\label{infinite-population-sampling-with-replacement}}
+
+A sample of size \(n_1\) drawn from \(\Pi_1\) and \(n_2\) drawn from
+\(\Pi_2\). Then, \[\begin{aligned}
+\bar{X_1} &= \frac{1}{n_1}\sum_{i = 1}^{n_1}X_i \\
+\bar{Y_2} &= \frac{1}{n_2}\sum_{i = 1}^{n_2}Y_i
+\end{aligned}\] Where \[\begin{aligned}
+E(X_1) &= \mu_1 \\
+E(Y_2) &= \mu_2
+\end{aligned}\] and \[\begin{aligned}
+Var(X_1) &= \frac{\sigma_1^2}{n_1} \\
+Var(Y_2) &= \frac{\sigma_2^2}{n_2}
+\end{aligned}\] Then, the expectation of \(\bar{X_1} - \bar{Y_2}\) is
+\[\mu_{\bar{X_1} - \bar{Y_2}} = E(\bar{X_1} - \bar{Y_2}) = E(\bar{X_1}) - E(\bar{Y_2}) = \mu_1 - \mu_2\]
+The variance is
+\[\sigma_{\bar{X_1} - \bar{Y_2}} = Var(\bar{X_1} - \bar{Y_2}) = Var(\bar{X_1}) + Var(\bar{Y_2}) = \frac{\sigma_1^2}{n_1} + \frac{\sigma_2^2}{n_2}\]
+
+\hypertarget{finite-population-sampling-without-replacement}{%
+\subsection{Finite Population (Sampling Without
+Replacement)}\label{finite-population-sampling-without-replacement}}
+
+A sample of size \(n_1\) drawn from \(\Pi_1\) and \(n_2\) drawn from
+\(\Pi_2\). Then, \[\begin{aligned}
+\bar{X_1} &= \frac{1}{n_1}\sum_{i = 1}^{n_1}X_i \\
+\bar{Y_2} &= \frac{1}{n_2}\sum_{i = 1}^{n_2}Y_i
+\end{aligned}\] Where \[\begin{aligned}
+E(X_1) &= \mu_1 \\
+E(Y_2) &= \mu_2
+\end{aligned}\] and \[\begin{aligned}
+Var(X_1) &= \frac{\sigma_1^2}{n_1}\left(\frac{N_1-n_1}{N_1-1}\right) \\
+Var(Y_2) &= \frac{\sigma_2^2}{n_2}\left(\frac{N_2-n_2}{N_2-1}\right)
+\end{aligned}\] Then, the expectation of \(\bar{X_1} - \bar{Y_2}\) is
+\[\mu_{\bar{X_1} - \bar{Y_2}} = E(\bar{X_1} - \bar{Y_2}) = E(\bar{X_1}) - E(\bar{Y_2}) = \mu_1 - \mu_2\]
+The variance is
+\[\sigma_{\bar{X_1} - \bar{Y_2}} = Var(\bar{X_1} - \bar{Y_2}) = Var(\bar{X_1}) + Var(\bar{Y_2}) = \frac{\sigma_1^2}{n_1}\left(\frac{N_1-n_1}{N_1-1}\right) + \frac{\sigma_2^2}{n_2}\left(\frac{N_2-n_2}{N_2-1}\right)\]
+
+\hypertarget{the-sample-variance}{%
+\section{The Sample Variance}\label{the-sample-variance}}
+
+Suppose the following: \[\begin{aligned}
+S^2 &= \frac{1}{n}\sum_{i=1}^n(X_i-\bar{X})^2 \\
+&= \frac{1}{n}\sum_{i=1}^n(X_i^2-2\bar{X}X_i + \bar{X}^2) \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-2\bar{X} \underbrace{\frac{1}{n}\sum_{i=1}^nX_i}_{\bar{X}} +  \frac{1}{n}\sum_{i=1}^n\bar{X}^2 \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-2\bar{X}^2 + \bar{X}^2 \\
+&= \frac{1}{n}\sum_{i=1}^nX_i^2-\bar{X}^2
+\end{aligned}\] Then, we have a biased estimator of variance, as can be
+seen below: \[\begin{aligned}
+E(S^2) &= E(\frac{1}{n}\sum_{i=1}^nX_i^2-\bar{X}^2) \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) - E\left[\frac{1}{n}\sum_{i=1}^nX_i\frac{1}{n}\sum_{j=1}^nX_j\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) - \frac{1}{n^2}E\left[\sum_{i=1}^n\sum_{j=1}^nX_iX_j\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) -\frac{1}{n^2}E\left[\underbrace{\sum_{i=1}^nX_i^2}_{n} + \underbrace{\sum_{i=1}^n\sum_{j\ne i}^nX_iX_j}_{n^2-n}\right] \\
+&= \frac{1}{n}\sum_{i=1}^nE(X_i^2) -\frac{1}{n^2}\sum_{i=1}^nE(X_i^2) + \frac{1}{n^2}\sum_{i=1}^n\sum_{j\ne i}^nE(X_i)E(X_j) \dots Independence \\
+&= \frac{n-1}{n}E(X_i^2) - \frac{n-1}{n}E(X_i)^2\dots Identical \\
+&= \frac{n-1}{n}[E(X_i^2) -E(X_i)^2] \\
+&= \frac{n-1}{n}Var(X_i)
+\end{aligned}\] In order to obtain an unbiased estimator of variance,
+\[\begin{aligned}
+E(S^2) &= \frac{n-1}{n}Var(X_i) \\
+\implies E(\frac{n}{n-1}S^2) &= \frac{n}{n-1}E(S^2) = Var(X_i) \\
+\frac{n}{n-1}S^2 &= \frac{n}{n-1}\cdot\frac{1}{n}\sum_{i=1}^n(X_i-\bar{X})^2 = \frac{1}{n-1}\sum_{i=1}^n(X_i-\bar{X})^2 \dots \Box
+\end{aligned}\]
+
+So, the sample variance is
+\[\hat{S}^2 = \frac{1}{n-1}\sum_{i=1}^n(X_i-\bar{X})^2\]
+
+\end{document}
